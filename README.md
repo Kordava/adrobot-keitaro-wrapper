@@ -1,100 +1,136 @@
 # Adrobot — TASK-01 read-only Fetch (v0.3)
 
-This is a **partial implementation**, not the complete Keitaro wrapper. The
+Adrobot is intended to create Keitaro campaigns and edit their offer bindings.
+This is a **partial implementation**: only read-only Fetch is available. The
 normative requirements remain in `source/Adrobot_TZ_v0.3.1.md`; `AGENTS.md` and
 `04_tasks.yaml` describe scope and acceptance.
 
 ## Start locally
 
-Requires Python 3.12 or 3.13, `uv`, and network access to install dependencies.
+Requires Python 3.12 or 3.13, **uv 0.13.9**, and network access for dependency
+installation. `uv.lock` fixes the application and development package versions;
+local commands and CI use the same locked installation. It does not bundle
+packages for offline download or fix every part of the host toolchain.
+
+From a clean clone, without `.env`, a Keitaro key or the historical ZIP:
 
 ```bash
-uv sync --all-groups
-cp .env.example .env
-# Edit .env locally: set ADROBOT_KEITARO_URL and ADROBOT_KEITARO_API_KEY
-uv run alembic upgrade head
-uv run uvicorn adrobot.main:app --host 127.0.0.1 --port 8000
+uv sync --locked --all-groups --python 3.12
+uv run --locked uvicorn adrobot.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open <http://127.0.0.1:8000/editor>, enter a **numeric campaign ID**, and
-click **Fetch streams from KT**. Never put the Keitaro API key in the URL or
-browser JavaScript. The app authenticates with the backend-only `Api-Key`
-header; it does not follow redirects and validates TLS certificates.
+Use `--python 3.13` instead to select the other supported interpreter. Open
+<http://127.0.0.1:8000/health> or <http://127.0.0.1:8000/editor>. Health,
+HTML and static assets work without credentials or creating a database. Fetch
+returns an unavailable response until the backend is configured.
 
-The current page is **read-only**. It shows ordered streams and, for offer
-streams, binding ID, global offer ID, binding state, and the *raw* `share`
-integer provided by Keitaro. It does not normalize the shares or claim they
-are traffic percentages for unequal mixes. Non-offer streams are displayed as
-streams without exposing their redirects or filters. There is **no editor
-archive, Pin, Create or Push** at this stage.
-
-### Live Fetch smoke (requires network access to test Keitaro)
-
-Run the same FastAPI GET route in-process; no public port is required:
+The existing SQLite bootstrap is run separately:
 
 ```bash
-uv run python -m adrobot.keitaro.live_fetch 215477
+uv run --locked alembic upgrade head
 ```
 
-The output is deliberately restricted to `status`, campaign ID, count of
-streams, offer-streams, and bindings. The command returns nonzero for an
-unauthorized, unavailable, malformed or failed read. `215477` is a **sample
-campaign ID observed during authorized read-only discovery**; choose a current
-test campaign you have permission to read. It is not a stream ID.
+It currently creates only the Alembic bootstrap, not the editor archive schema.
+`known_offer_bindings` and its constraints belong to TASK-03/OPEN-03.
+
+### Configure live Fetch
+
+Obtain an Admin API key from your own authorized test Keitaro administration.
+Stop the app, copy `.env.example` to `.env`, and replace the placeholders locally:
+
+- `ADROBOT_KEITARO_URL`: the authorized test instance's HTTPS origin.
+- `ADROBOT_KEITARO_API_KEY`: the Admin API key, used only by the backend.
+- `ADROBOT_DATABASE_URL`: SQLite URL (default `sqlite:///./adrobot.db`).
+- `ADROBOT_LOG_LEVEL`: logging level (default `INFO`).
+
+Restart with the same uvicorn command. `.env` is ignored by Git. Never put the
+key in a URL, browser JavaScript, screenshots or logs. The backend uses the
+`Api-Key` header, validates TLS certificates and does not follow redirects.
+
+Enter a **numeric campaign ID** in the editor and click **Fetch streams from KT**.
+The current page shows ordered streams and, for offer streams, binding ID,
+global offer ID, binding state and the *raw* upstream `share` integer. It does
+not normalize shares or claim they are traffic percentages for unequal mixes.
+Non-offer streams are displayed without exposing their redirects or filters.
+There is **no editor archive, Pin, Create, Preview or Push** at this stage.
+
+### Live Fetch smoke (authorized test instance only)
+
+Exercise the same FastAPI GET route in-process without opening a public port:
+
+```bash
+uv run --locked python -m adrobot.keitaro.live_fetch 215477
+```
+
+Output is restricted to status, campaign ID, stream/offer-stream/binding counts.
+The command returns nonzero for an unauthorized, unavailable, malformed or
+failed read. `215477` is a sample campaign ID from earlier authorized read-only
+discovery; choose a current campaign you have permission to read.
 
 For schema-only debugging (field names/types and counts, never values):
 
 ```bash
-uv run python -m adrobot.keitaro.inspect 215477
+uv run --locked python -m adrobot.keitaro.inspect 215477
 ```
 
-The path used upstream is `GET /admin_api/v1/campaigns/{id}/streams`. Our own
-read-only route is `GET /api/campaigns/{id}/editor` and currently advertises
-`mapping_status=remote_only`. Successful Fetch must not be confused with a
-full synchronized editor snapshot (TASK-03).
+Upstream: `GET /admin_api/v1/campaigns/{id}/streams`. The internal route is
+`GET /api/campaigns/{id}/editor`, with `mapping_status=remote_only`. Successful
+Fetch is not a synchronized editor snapshot (TASK-03).
 
-## Offline checks
+## Offline checks and CI
+
+After the locked install:
 
 ```bash
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src/adrobot
-uv run pre-commit run --all-files
-uv run alembic upgrade head
-python checks/validate_pack.py
+uv run --locked pytest
+uv run --locked ruff check .
+uv run --locked ruff format --check .
+uv run --locked mypy src/adrobot
+uv run --locked pre-commit run --all-files
+node --check src/adrobot/web/static/editor.js
 ```
 
-The offline test suite uses `httpx.MockTransport`; **it never requests live
-Keitaro**. It includes fake HTTP errors and malformed responses, an in-process
-FastAPI smoke test, strict nested stream validation, and checks that unknown
-upstream fields/credentials do not reach the public response.
+Node 20 is used for the JavaScript syntax check. For Python 3.13, pass
+`--python-version 3.13` to mypy. To enable the versioned hooks locally, run
+`uv run --locked pre-commit install`.
 
-**Execution evidence:** in the provided sandbox Python 3.13.5,
-`PYTHONPATH=src python -m pytest -q` passed **27 tests** and `compileall`
-passed. Actual live Fetch **has not** been executed through the local app:
-the sandbox cannot connect to the test Keitaro host. Ruff, mypy, pre-commit,
-CI and a dependency lock have **not** been verified here; offline dependency
-installation and lock resolution cannot access uncached packages. Follow the
-commands above on a networked machine and record their actual results. Do not
-mark TASK-01 complete until the live FastAPI Fetch is observed.
+CI runs these gates on Python 3.12 and 3.13, plus two Alembic upgrades against
+a separate temporary SQLite database. It needs no Keitaro secrets or live API.
+The offline tests use fake HTTP/ASGI clients for HTTP errors, malformed nested
+responses, ordered safe projections and startup/static assets. They do not
+prove live integration. Actual GitHub Actions on the published state remains
+a separate acceptance gate; local success does not close AC-Q-05.
+
+### Full requirements-pack validation
+
+The strict structural validator needs the **original** historical ZIP at
+`reference/Adrobot_requirements_review_v0.2.zip` (hash in `00_manifest.yaml`):
+
+```bash
+uv run --locked python checks/validate_pack.py
+```
+
+This ZIP is ignored by Git and is not required to install or run the app, or
+for CI. The command intentionally fails when the archive is absent. A valid
+pack proves document provenance and references, not application acceptance.
 
 ## Design and limitations
 
-- `src/adrobot/keitaro/client.py` owns HTTP/timeouts and response errors.
-- `src/adrobot/keitaro/read_models.py` validates the complete remote array and
-  produces a narrow public projection; extra remote attributes are discarded.
-- `src/adrobot/api/routes.py` serves HTML and the temporary JSON Fetch route.
-- `src/adrobot/keitaro/live_fetch.py` exercises that route with an ASGI client;
-  it emits no raw upstream payload or authentication secrets.
-- A missing or malformed nested field is **502**, never a synthetic empty list.
-  A failed Fetch does not replace the previously displayed table in the UI.
-- Alembic environment exists; `known_offer_bindings` migration belongs to
-  TASK-03 after resolving OPEN-03 (binding identity and duplicates).
-- `uv.lock` is not in this snapshot. Generate it and switch CI to `--locked`
-  after successful resolution; do not claim a reproducible lockfile yet.
-- This scaffold is meant for `127.0.0.1` only. There is no public-user
-  authentication; a publicly exposed endpoint would reveal test campaigns.
+- `keitaro/client.py` owns HTTP/timeouts and response errors;
+  `keitaro/read_models.py` validates the complete array and projects safe DTOs.
+  The router serves HTML and the temporary JSON Fetch response.
+- Missing or malformed nested fields produce **502**, never a synthetic empty
+  list. A failed Fetch retains the previous successful UI table.
+- The planned editor archive stores binding history and Pin in SQLite. Draft
+  modes `SNAPSHOT`/`RECALCULATED`, full Pin handling, Preview freshness and
+  Push/readback are future work, not current capabilities.
+- Live unequal shares and empty offer-stream classification still require
+  instance evidence. API questions remain in `docs/keitaro-api-notes.md`.
+- Future writes must report `UNKNOWN`/`PARTIAL`/`CONFLICT` honestly; revisions
+  alone do not provide atomic CAS against Keitaro. GET/PUT races and temporary
+  browser drafts are accepted limits of that future editor contract.
+- Bind to `127.0.0.1`. Public-user authentication is not implemented.
 
-The evidence and still-unverified API assumptions are in
-`docs/keitaro-api-notes.md`; work status is in `docs/IMPLEMENTATION_STATUS.md`.
+Current verification results and remaining work are recorded in
+`docs/IMPLEMENTATION_STATUS.md`. TASK-01 and the complete product remain open
+until their actual CI/live acceptance is met.

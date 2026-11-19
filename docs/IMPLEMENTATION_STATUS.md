@@ -2,45 +2,65 @@
 
 Baseline: `source/Adrobot_TZ_v0.3.1.md`, implementation pack v0.1.
 
-## Implemented and checked offline
+## Current implementation
 
-- [x] Typed settings, HTTP lifespan/client with TLS verification, `Api-Key` header,
-      bounded timeouts, no redirects, no mutation methods.
-- [x] Read `GET /admin_api/v1/campaigns/{id}/streams` through `KeitaroClient`.
-- [x] Strict nested read validation and safe public DTO: stream position/type,
-      separate binding ID and offer ID, raw upstream `share`, `state`.
-- [x] FastAPI `GET /api/campaigns/{id}/editor` returning `remote_only` response.
-- [x] Browser `Fetch` renders stream and binding data, retaining last successful
-      view on read failure. No archive, Pin or write buttons yet.
-- [x] `python -m adrobot.keitaro.live_fetch CAMPAIGN_ID`: in-process HTTP
-      smoke of **the same** FastAPI route; output limited to safe counters.
-- [x] In-memory fake/ASGI tests including invalid nested fields, wrong IDs,
-      redaction, timeout/401/404/429/5xx, schema types and zero-binding stream.
-- [x] `PYTHONPATH=src python -m pytest -q`: **27 passed** (Python 3.13.5).
-- [x] Python source compilation and JS syntax check succeeded.
-- [x] Alembic bootstrap exists; no binding table until OPEN-03 is resolved.
-- [x] Authorized in-app API Explorer returned live **read-only** Keitaro JSON
-      (see API notes). No writes were executed.
+- Typed settings and lifespan-owned HTTP client with TLS verification,
+  backend-only `Api-Key`, bounded timeouts, no redirects or mutation methods.
+- Read `GET /admin_api/v1/campaigns/{id}/streams`, strict nested validation and
+  safe public DTOs with distinct binding/offer IDs and raw upstream shares.
+- Internal `GET /api/campaigns/{id}/editor` returning `remote_only` data;
+  browser Fetch retains the previous successful view after a read error.
+- In-process `live_fetch` smoke uses the same route and emits safe counters.
+- Offline fake/ASGI tests cover invalid nested fields and IDs, redaction,
+  HTTP errors, timeouts, zero-binding streams and startup/static assets.
+- Locked application/dev dependencies, uv 0.13.9 commands, Ruff 0.14.10 matching
+  the existing hooks, strict mypy with the existing Pydantic plugin.
+- CI matrix for Python 3.12/3.13 with locked install, quality/tests, Node syntax,
+  hooks and two temporary SQLite bootstrap upgrades. No Keitaro secrets needed.
+- Alembic bootstrap only; editor archive schema remains TASK-03/OPEN-03.
 
-## Not yet proven (do not mark TASK-01 VERIFIED)
+## Verification
 
-- [ ] **App's own live Fetch with `Api-Key` header** against `tlgk.host`.
-      Development sandbox external connection failed (`ConnectError`).
-      Execute `uv run python -m adrobot.keitaro.live_fetch 215477` on a networked
-      authorized workstation and record the sanitized result.
-- [ ] Ruff lint, Ruff format, mypy, pre-commit and GitHub Actions CI actually green.
-      Tools unavailable in the offline environment.
-- [ ] `uv.lock` generated with a full dependency resolve, committed, and CI
-      updated to `uv sync --locked`.
-- [ ] Verify the live behavior of unequal `share` and zero-offer offer-stream
-      before editor archive/draft; mutation schemas remain OPEN-01/02/03/04/05/06.
+Local foundation verification on 2026-11-20 passed on Python **3.12.3** and
+**3.13.18**, using separate clean source copies without `.env`, an existing
+`.venv` or the historical ZIP:
 
-## Acceptance mapping
+- `uv sync --locked --all-groups` installed the same locked graph on both.
+- **27 pytest tests passed on each interpreter**; Ruff lint/format, strict
+  mypy (15 modules) and all versioned pre-commit hooks passed on each.
+- Real uvicorn processes served health, both HTML pages and JS/CSS resources
+  on loopback without credentials or creating the configured database.
+- Two Alembic upgrades per interpreter passed on fresh temporary SQLite;
+  integrity/schema checks passed and a control row survived the second run.
+- Node 20 syntax and `git diff --check` passed. The strict full-pack validator
+  passed separately with the original ZIP (70 rules, 37 AC, 5 tasks, 64 sections,
+  17 DoD items). This proves document structure, not application acceptance.
 
-`TASK-01` (ENG/INT plus partial `AC-E-01`, `AC-Q-04/05/06/08`): offline
-implementation evidence available. First **live** FastAPI Fetch is required
-before marking task complete. No `AC` dependent on archive, Pin, calculations
-or mutation is marked passed.
+No Fetch mapping/error semantics changed. The existing Starlette warning about
+the deprecated httpx transport integration remains; it did not fail the suite.
 
-Next: networked live read smoke, finish quality gates/lock, then TASK-02
-creator and independent TASK-03 domain math. No read failure may update archive.
+Actual GitHub Actions on matching published content is still pending. The
+agent does not create commits; publication needs user action/authorization.
+Foundation is not VERIFIED until that external gate passes.
+
+## Integration still unproven
+
+- App's own live Fetch with the backend `Api-Key` against the authorized test
+  instance. Earlier API Explorer discovery is not proof of this app's route.
+- Live unequal-share and zero-offer offer-stream behavior (OPEN-02/04).
+- Mutation schemas and binding identity/duplicates (OPEN-01/02/03/04/05/06).
+- Request/stage/campaign/error diagnostics and runtime security checks belong
+  to the separate `readonly_fetch` scope; foundation preserves Fetch semantics.
+
+## Acceptance mapping and next step
+
+Foundation covers installation/startup and tooling portions of TASK-01,
+ENG-02/03/05/06/07/08/10/12/13, AC-Q-01/04/05. AC-Q-05 requires actual CI.
+AC-Q-02 is not complete: bootstrap is not the future archive table/constraints.
+No archive, Pin, math, Create or Push acceptance is marked passed.
+
+Next: publish the matching foundation state and observe CI; independent
+`readonly_fetch` work may proceed while waiting only for that external gate.
+TASK-01 additionally requires actual FastAPI/browser Fetch, error preservation,
+security/observability checks and recorded live API facts. Ordinary pytest/CI
+remain independent of Keitaro. No read failure may update the archive.

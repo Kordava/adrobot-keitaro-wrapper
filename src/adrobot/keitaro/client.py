@@ -28,9 +28,7 @@ class KeitaroClient:
         if campaign_id <= 0:
             raise ValueError("campaign_id must be positive")
         try:
-            response = await self._transport.get(
-                f"/admin_api/v1/campaigns/{campaign_id}/streams"
-            )
+            response = await self._transport.get(f"/admin_api/v1/campaigns/{campaign_id}/streams")
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             raise KeitaroUnavailable("Remote tracker is unavailable") from exc
 

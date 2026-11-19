@@ -3,7 +3,8 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Path as ApiPath, Request, Response
+from fastapi import APIRouter, Request, Response
+from fastapi import Path as ApiPath
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 

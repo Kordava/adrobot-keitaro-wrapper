@@ -15,9 +15,7 @@ def test_schema_diagnostic_does_not_emit_values() -> None:
             "id": 74,
             "name": "PRIVATE STREAM NAME",
             "secret": "TOKEN-DONT-PRINT",
-            "offers": [
-                {"offer_id": 11, "share": 33, "private": "PRIVATE-OFFER-VALUE"}
-            ],
+            "offers": [{"offer_id": 11, "share": 33, "private": "PRIVATE-OFFER-VALUE"}],
         },
         {"id": 75, "name": "Empty", "offers": []},
         {"id": 76, "name": "Unspecified"},
@@ -26,7 +24,9 @@ def test_schema_diagnostic_does_not_emit_values() -> None:
     rendered = str(result)
     assert result["stream_count"] == 3
     assert result["streams"][0]["offer_fields"] == {
-        "offer_id": "number", "private": "string", "share": "number"
+        "offer_id": "number",
+        "private": "string",
+        "share": "number",
     }
     assert result["streams"][1]["offers_count"] == 0
     assert result["streams"][2]["offers_field_type"] == "absent"

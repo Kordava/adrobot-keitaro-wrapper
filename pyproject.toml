@@ -23,7 +23,7 @@ dev = [
     "mypy>=1.15,<2",
     "pre-commit>=4,<5",
     "pytest>=8,<10",
-    "ruff>=0.11,<1",
+    "ruff==0.14.10",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -46,4 +46,4 @@ python_version = "3.12"
 files = ["src/adrobot"]
 strict = true
 warn_unreachable = true
-plugins = []
+plugins = ["pydantic.mypy"]

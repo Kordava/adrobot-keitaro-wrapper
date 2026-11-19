@@ -1,6 +1,7 @@
 """Read-only FastAPI integration contract; all network requests are mocked."""
 
 from collections.abc import Callable
+from pathlib import Path
 
 import httpx
 import pytest
@@ -47,13 +48,30 @@ def streams_fixture() -> list[dict[str, object]]:
     ]
 
 
-def test_health_and_pages_are_available_without_credentials() -> None:
-    app = create_app(Settings(keitaro_url=None, keitaro_api_key=None, _env_file=None))
+def test_health_and_pages_are_available_without_credentials(tmp_path: Path) -> None:
+    database = tmp_path / "unused.db"
+    app = create_app(
+        Settings(
+            keitaro_url=None,
+            keitaro_api_key=None,
+            database_url=f"sqlite:///{database}",
+            _env_file=None,
+        )
+    )
     with TestClient(app) as client:
         assert client.get("/health").json() == {"status": "ok"}
         assert client.get("/editor").status_code == 200
         assert client.get("/").status_code == 200
+        for path, content_type, marker in (
+            ("/static/editor.js", "javascript", "fetch("),
+            ("/static/styles.css", "text/css", "body"),
+        ):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert content_type in response.headers["content-type"]
+            assert marker in response.text
         assert client.get("/api/campaigns/123/editor").status_code == 503
+    assert not database.exists()
 
 
 def test_read_only_fetch_exposes_safe_ordered_streams_and_bindings() -> None:
@@ -95,9 +113,7 @@ def test_read_only_fetch_exposes_safe_ordered_streams_and_bindings() -> None:
                 "state": "active",
                 "schema": "landings",
                 "kind": "offers",
-                "offers": [
-                    {"binding_id": 301, "offer_id": 42, "state": "active", "share": 100}
-                ],
+                "offers": [{"binding_id": 301, "offer_id": 42, "state": "active", "share": 100}],
             },
         ],
     }

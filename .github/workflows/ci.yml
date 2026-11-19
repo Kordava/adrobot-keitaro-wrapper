@@ -6,23 +6,38 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.13.9"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - name: Install
-        run: uv sync --all-groups
+        run: uv sync --locked --all-groups --python ${{ matrix.python-version }}
       - name: Ruff lint
-        run: uv run ruff check .
+        run: uv run --locked ruff check .
       - name: Ruff format
-        run: uv run ruff format --check .
+        run: uv run --locked ruff format --check .
       - name: Mypy
-        run: uv run mypy src/adrobot
+        run: uv run --locked mypy --python-version ${{ matrix.python-version }} src/adrobot
       - name: Tests
-        run: uv run pytest
+        run: uv run --locked pytest
+      - name: JavaScript syntax
+        run: node --check src/adrobot/web/static/editor.js
       - name: Migrations (empty DB)
-        run: uv run alembic upgrade head
+        env:
+          ADROBOT_DATABASE_URL: sqlite:///${{ runner.temp }}/adrobot-bootstrap.db
+        run: |
+          uv run --locked alembic upgrade head
+          uv run --locked alembic upgrade head
       - name: Pre-commit
-        run: uv run pre-commit run --all-files
+        run: uv run --locked pre-commit run --all-files

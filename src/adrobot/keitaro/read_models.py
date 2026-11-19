@@ -100,9 +100,7 @@ def parse_streams(campaign_id: int, data: object) -> list[CampaignStream]:
     return streams
 
 
-def build_readonly_snapshot(
-    campaign_id: int, streams: list[CampaignStream]
-) -> ReadonlySnapshot:
+def build_readonly_snapshot(campaign_id: int, streams: list[CampaignStream]) -> ReadonlySnapshot:
     """Expose a deliberately narrow, non-mutating, archive-free API projection."""
     return ReadonlySnapshot(
         campaign_id=campaign_id,
