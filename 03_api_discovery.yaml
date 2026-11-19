@@ -1,0 +1,157 @@
+schema_version: 1
+baseline_ref: 00_manifest.yaml
+status: instance_not_inspected_for_this_pack
+purpose: Технические зависимости и вопросы из принятого ТЗ; это не дополнительные разрешения на каждый шаг.
+results_document: docs/keitaro-api-notes.md
+facts_verified_in_this_pack: []
+required_runtime_inputs:
+- Адрес выделенного тестового Keitaro.
+- Доступ к документации нужного инстанса.
+- Рабочий API-ключ, передаваемый через backend settings вне документов и репозитория.
+evidence_policy:
+- Записывать факты и соответствующие свидетельства в один docs/keitaro-api-notes.md, без секретов. Не дублировать
+  полный mapping в этом списке вопросов.
+- Различать найденное в документации, подтверждённое read-only ответом и подтверждённое мутацией/readback. Документация
+  сама по себе не равна успешному live smoke.
+- Начинать с read-only. Мутации и smoke выполнять только на выделенной тестовой кампании в рамках задачи реализации.
+- Для решения достаточно подтверждённых фактов, относящихся к используемым операциям; отсутствие CAS и сохранённый
+  запрет последнего оффера — допустимые результаты.
+- Если доступа нет, фиксировать конкретную незавершённую интеграцию и продолжать независимую работу. Не выдумывать
+  endpoints, payload или семантику share.
+questions:
+- id: OPEN-01
+  priority: P0
+  question_verbatim: Актуальная версия Keitaro, реальные endpoints и JSON для создания кампании/двух потоков, фильтра
+    GEO, fallback и позиционного порядка
+  impact_verbatim: Нельзя финализировать адаптер создания
+  source_section: '16.1'
+  kind: instance_api
+  state_at_pack_creation: unverified
+  required_before: Фиксация затрагиваемых методов клиента создания; read-часть — до первого реального Fetch.
+  evidence_needed:
+  - Версия инстанса, базовый путь и авторизация из документации/фактического доступа.
+  - Проверенные формы чтения кампании/полного списка потоков, поиска офферов и пагинации.
+  - Поля кампании и потоков, GEO/fallback, redirect и позиционный порядок. Мутации затем подтверждаются выделенным
+    live smoke.
+  independent_work:
+  - Каркас, внутренние модели, интерфейс адаптера, оркестрация и тесты на подменяемом адаптере.
+  task_refs:
+  - TASK-01
+  - TASK-02
+  - TASK-03
+  - TASK-04
+  - TASK-05
+- id: OPEN-02
+  priority: P0
+  question_verbatim: Семантика поля `share`/`weight` и перевод UI процентов `25/38/37` в фактическую Keitaro конфигурацию
+  impact_verbatim: Нельзя считать Push долей завершённым
+  source_section: '16.1'
+  kind: instance_api
+  state_at_pack_creation: unverified
+  required_before: Отображение реальных долей через адаптер; запись рассчитанных долей и readback.
+  evidence_needed:
+  - Смысл raw share/weight либо иных фактических полей.
+  - Чтение 25/25 без нормализации и перевод рассчитанных целых 25/38/37 в upstream-поля.
+  - Соответствие readback ожидаемым UI-значениям; не выводить вероятность трафика только из конфигурационной доли.
+  independent_work:
+  - Чистый расчёт целых percentage points, режимы, Preview и числовые тесты на внутренних данных.
+  task_refs:
+  - TASK-01
+  - TASK-02
+  - TASK-03
+  - TASK-04
+  - TASK-05
+- id: OPEN-03
+  priority: P1
+  question_verbatim: Разрешает ли Keitaro повторные привязки одного Offer ID в одном потоке; как идентифицировать
+    binding
+  impact_verbatim: Влияет на unique key архива
+  source_section: '16.1'
+  kind: instance_api
+  state_at_pack_creation: unverified
+  required_before: Окончательный уникальный ключ known_offer_bindings и зависимая от binding identity логика.
+  evidence_needed:
+  - Возможность повторных Offer ID в одном потоке.
+  - Фактическая идентичность привязки; достаточность ключа campaign/stream/offer либо необходимая минимальная корректировка.
+  independent_work:
+  - Alembic environment, владение Session, чистая математика с абстрактными уникальными привязками.
+  task_refs:
+  - TASK-01
+  - TASK-03
+  - TASK-04
+  - TASK-05
+- id: OPEN-04
+  priority: P1
+  question_verbatim: Как Keitaro представляет offer-stream без текущих офферов; допускает ли его сохранение пустым
+  impact_verbatim: До подтверждения не разрешаем удаление последнего
+  source_section: '16.1'
+  kind: instance_api
+  state_at_pack_creation: unverified
+  required_before: Окончательная классификация пустого offer-stream и его синхронизация с архивом.
+  evidence_needed:
+  - Как успешный полный ответ представляет офферный поток без текущих привязок.
+  - Как отличить его от redirect/non-offer потока.
+  - Разрешает ли API пустое сохранение; действующий запрет удаления последнего можно оставить.
+  accepted_limitations:
+  - Поддержка публикации пустого fallback не становится обязательной функцией.
+  independent_work:
+  - Обработка полного/неполного ответа на fixtures; локальные правила архива после подтверждения binding identity.
+  task_refs:
+  - TASK-01
+  - TASK-03
+  - TASK-04
+  - TASK-05
+- id: OPEN-05
+  priority: P1
+  question_verbatim: Какие ID и типы у настроенных domain/group/source на тестовом инстансе
+  impact_verbatim: Defaults валидируются; функциональность не меняется
+  source_section: '16.1'
+  kind: instance_api
+  state_at_pack_creation: unverified
+  required_before: Первый реальный Create на тестовом инстансе.
+  evidence_needed:
+  - Действительные ID/типы и доступность domain/group/source, используемых как defaults.
+  accepted_limitations:
+  - Не требуется создавать справочники на лету или добавлять полноценные UI-селекты.
+  independent_work:
+  - Конфигурация, валидация наличия defaults, форма и fake-тесты отсутствующих значений.
+  task_refs:
+  - TASK-01
+  - TASK-02
+  - TASK-05
+- id: OPEN-06
+  priority: P1
+  question_verbatim: Может ли API делать atomic conditional write; какие поля update требует и сохраняет
+  impact_verbatim: Best-effort защита остаётся, no-CAS ограничение документируем
+  source_section: '16.1'
+  kind: instance_api
+  state_at_pack_creation: unverified
+  required_before: Окончательный payload update, состав remote base_revision и первый live Push.
+  evidence_needed:
+  - Реально изменяемые и обязательные поля update.
+  - Способ сохранения action/filters/redirects/position/landings и прочих нецелевых полей.
+  - Наличие/отсутствие atomic conditional write.
+  - Подтверждение результата readback при изолированном live smoke.
+  accepted_limitations:
+  - Отсутствие CAS допустимо с принятой best-effort сверкой и описанным race.
+  independent_work:
+  - Оркестрация Push на fake-адаптере, проверки обеих ревизий и обработки неизвестного исхода.
+  task_refs:
+  - TASK-01
+  - TASK-04
+  - TASK-05
+- id: OPEN-07
+  priority: P1
+  question_verbatim: Точная дата начала пятидневного срока и требуемые права на GitHub-репозиторий
+  impact_verbatim: Организационно, не блокирует архитектуру
+  source_section: '16.1'
+  kind: organizational
+  state_at_pack_creation: unverified
+  required_before: Окончательное календарное планирование и предоставление доступа проверяющим.
+  evidence_needed:
+  - Начало отсчёта пятидневного срока.
+  - Требуемый доступ к GitHub-репозиторию.
+  independent_work:
+  - Не блокирует архитектуру или независимую реализацию.
+  task_refs:
+  - TASK-05

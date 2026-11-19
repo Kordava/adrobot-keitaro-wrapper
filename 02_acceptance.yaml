@@ -1,0 +1,633 @@
+schema_version: 1
+baseline_ref: 00_manifest.yaml
+status: criteria_defined_implementation_not_evaluated
+transcription: scenario и expected перенесены из таблиц §14 дословно с сохранением inline Markdown.
+count: 37
+groups:
+  creator: 7
+  editor: 20
+  quality: 10
+interpretation:
+- Один AC может требовать нескольких проверок и участия нескольких задач. Частичная проверка domain не закрывает
+  AC, если строка также требует Push/readback.
+- Правила без отдельного AC сохраняют обязательность по ТЗ/DoD. Отсутствие AC-ссылки не разрешает их пропускать.
+- Перечень — ожидаемое поведение, а не утверждение о прохождении тестов. Реализация и live-интеграция в этом пакете
+  не проверены.
+criteria:
+- id: AC-C-01
+  scenario: Валидные Name, GEO=AU, Offer ID
+  expected: В Keitaro существует ровно одна созданная целевая кампания с заданным именем, доменом, группой, источником
+  source_section: '14.1'
+  source_line: 673
+  rule_refs:
+  - SCP-02
+  - CRE-01
+  - CRE-04
+  - CRE-05
+  - CRE-09
+  task_refs:
+  - TASK-02
+  - TASK-05
+- id: AC-C-02
+  scenario: Проверить потоки
+  expected: Их ровно два; первый по приоритету принимает AU и направляет на Google; второй содержит выбранный оффер
+  source_section: '14.1'
+  source_line: 674
+  rule_refs:
+  - CRE-06
+  - CRE-07
+  - CRE-08
+  task_refs:
+  - TASK-02
+  - TASK-05
+- id: AC-C-03
+  scenario: Ввести неверные GEO/Offer ID
+  expected: Валидационная ошибка до мутаций; нет ложного успеха
+  source_section: '14.1'
+  source_line: 675
+  rule_refs:
+  - CRE-01
+  - CRE-09
+  - INT-03
+  task_refs:
+  - TASK-02
+  - TASK-05
+- id: AC-C-04
+  scenario: API сломался после создания кампании, до второго потока
+  expected: Явный `PARTIAL`, известный campaign ID и стадия, нет автоматического удаления
+  source_section: '14.1'
+  source_line: 676
+  rule_refs:
+  - INT-05
+  task_refs:
+  - TASK-02
+  - TASK-05
+- id: AC-C-05
+  scenario: Потерян ответ после потенциального POST
+  expected: Исход неизвестен, нет слепого повторного создания
+  source_section: '14.1'
+  source_line: 677
+  rule_refs:
+  - INT-05
+  task_refs:
+  - TASK-02
+  - TASK-05
+- id: AC-C-06
+  scenario: Успешный Create
+  expected: Результат подтверждён повторным чтением Keitaro
+  source_section: '14.1'
+  source_line: 678
+  rule_refs:
+  - CRE-09
+  - INT-04
+  task_refs:
+  - TASK-02
+  - TASK-05
+- id: AC-C-07
+  scenario: Несколько GEO через запятую
+  expected: Проверка работает после подтверждения API mapping; одиночный код — обязательная база
+  source_section: '14.1'
+  source_line: 679
+  rule_refs:
+  - CRE-02
+  task_refs:
+  - TASK-02
+  - TASK-05
+- id: AC-E-01
+  scenario: '`Fetch` кампании с GEO-redirect и offer stream'
+  expected: Оба потока видны; подробности redirect не разбираются/не выводятся; офферный отображает привязки
+  source_section: '14.2'
+  source_line: 685
+  rule_refs:
+  - SCP-02
+  - ED-01
+  task_refs:
+  - TASK-01
+  - TASK-03
+  - TASK-05
+- id: AC-E-02
+  scenario: '`3 × ~33` → `Add` четвёртого'
+  expected: До Push в черновике `25/25/25/25`, Keitaro ещё не изменён
+  source_section: '14.2'
+  source_line: 686
+  rule_refs:
+  - ED-02
+  - ED-10
+  - ED-13
+  - ED-20
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-03
+  scenario: Четыре по 25 → Add пятого → `Cancel`
+  expected: Возврат к четырём по 25; пятый не создаёт архивную запись
+  source_section: '14.2'
+  source_line: 687
+  rule_refs:
+  - DATA-04
+  - ED-13
+  - ED-16
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-04
+  scenario: Add → актуальный `Preview` → `Push`
+  expected: При неизменных remote/local базах Keitaro сохраняет **в точности** показанные последним успешным Preview
+    упорядоченный состав и доли, подтверждение readback; нельзя Push со старым или ошибочным Preview
+  source_section: '14.2'
+  source_line: 688
+  rule_refs:
+  - INT-04
+  - ED-02
+  - ED-08
+  - ED-19
+  - ED-21
+  - ED-22
+  - ED-23
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-05
+  scenario: '`Remove(A)` до Push'
+  expected: А серый, `Removed`, `0%`, доступен `Bring Back`; остальные доли пересчитаны
+  source_section: '14.2'
+  source_line: 689
+  rule_refs:
+  - ED-03
+  - ED-10
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-06
+  scenario: '`Remove(A)` → `Bring Back(A)` до Push'
+  expected: Текущий состав восстановлен, ненужной записи в Keitaro нет
+  source_section: '14.2'
+  source_line: 690
+  rule_refs:
+  - ED-04
+  - ED-15
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-07
+  scenario: '`Remove(A)` → `Push`'
+  expected: Привязки A нет в Keitaro, глобальный Offer A сохранён; в Adrobot A остаётся архивным
+  source_section: '14.2'
+  source_line: 691
+  rule_refs:
+  - DATA-01
+  - ED-03
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-08
+  scenario: После AC-E-07 `Bring Back(A)` → `Push`
+  expected: Привязка A вновь появилась в Keitaro и подтверждена readback
+  source_section: '14.2'
+  source_line: 692
+  rule_refs:
+  - DATA-01
+  - ED-04
+  - ED-23
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-09
+  scenario: Удалить C,D вручную через Keitaro UI → `Fetch`
+  expected: C,D остались в Adrobot как `Removed` `0%` с `Bring Back`
+  source_section: '14.2'
+  source_line: 693
+  rule_refs:
+  - DATA-01
+  - DATA-03
+  - ED-06
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-10
+  scenario: После внешнего удаления Keitaro содержит значения `25/25`, нажать `Fetch`
+  expected: UI показывает **`25/25`, не `50/50`**
+  source_section: '14.2'
+  source_line: 694
+  rule_refs:
+  - ED-06
+  - ED-09
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-11
+  scenario: После внешнего удаления C,D и `Fetch` фактических `A=25/B=25` закрепить `A=25`, затем `Bring Back(C)`
+  expected: В черновике `A=25`, `B=38`, `C=37`; закреплённые 25 сохранены
+  source_section: '14.2'
+  source_line: 695
+  rule_refs:
+  - ED-04
+  - ED-06
+  - ED-11
+  - ED-13
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-12
+  scenario: После AC-E-11 `Push`
+  expected: Keitaro содержит A, B, C с подтверждёнными `25/38/37` в согласованном порядке; Pin сохранён локально
+  source_section: '14.2'
+  source_line: 696
+  rule_refs:
+  - INT-04
+  - ED-04
+  - ED-06
+  - ED-11
+  - ED-13
+  - ED-23
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-13
+  scenario: '`Unpin` в уже `RECALCULATED` черновике; два порядка `Unpin(A) → Bring Back(C)` и наоборот'
+  expected: Оба порядка при A25/B25, исходном Pin(A25), архивном C дают до Push `34/33/33`; последующий Push сохраняет
+    то же. В `SNAPSHOT` Unpin без смены состава доли не меняет
+  source_section: '14.2'
+  source_line: 697
+  rule_refs:
+  - ED-12
+  - ED-13
+  - ED-19
+  - ED-22
+  task_refs:
+  - TASK-03
+  - TASK-04
+  - TASK-05
+- id: AC-E-14
+  scenario: Недопустимая сумма закреплённых / нет свободных долей
+  expected: Preview показывает ошибку, Push не пишет в Keitaro
+  source_section: '14.2'
+  source_line: 698
+  rule_refs:
+  - INT-03
+  - ED-10
+  - ED-14
+  - ED-20
+  task_refs:
+  - TASK-03
+  - TASK-04
+  - TASK-05
+- id: AC-E-15
+  scenario: '`Fetch` вернул ошибку / неполную пагинированную выборку'
+  expected: Локальный архив не переведён массово в Removed, UI сообщает ошибку
+  source_section: '14.2'
+  source_line: 699
+  rule_refs:
+  - DATA-03
+  - INT-03
+  - ED-07
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-E-16
+  scenario: Изменить только целевой offer stream
+  expected: GEO-поток, остальные потоки и нецелевые поля сохранены
+  source_section: '14.2'
+  source_line: 700
+  rule_refs:
+  - INT-07
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-17
+  scenario: Целевой поток **или базовые локальные Pin** изменены с последнего Fetch
+  expected: '`409 CONFLICT`, без remote write и незаметной перезаписи чужих Pin; рекомендация перечитать'
+  source_section: '14.2'
+  source_line: 701
+  rule_refs:
+  - DATA-05
+  - INT-08
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-18
+  scenario: Ошибка записи или readback после Push
+  expected: Нет ложного успеха, черновик сохранён, доступна безопасная повторная сверка
+  source_section: '14.2'
+  source_line: 702
+  rule_refs:
+  - DATA-04
+  - INT-04
+  - ED-23
+  - ED-26
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-19
+  scenario: При Fetch `A25/B25` выполнить pin-only изменение в `SNAPSHOT` → Preview → Push
+  expected: Показанные `25/25` не нормализуются, Pin сохраняется локально; лишнего upstream PUT нет; архивные Pin
+    не теряются из-за пропущенных ключей
+  source_section: '14.2'
+  source_line: 703
+  rule_refs:
+  - DATA-05
+  - ED-09
+  - ED-12
+  - ED-17
+  - ED-18
+  - ED-24
+  task_refs:
+  - TASK-04
+  - TASK-05
+- id: AC-E-20
+  scenario: Возврат к исходным IDs **и** Pin, а также возврат только IDs при новом Pin; отмена/ошибка Preview
+  expected: Полное совпадение восстанавливает исходные `25/25`, `SNAPSHOT/CLEAN`; совпадение одних IDs при новом
+    `Pin(A34)` после композиционных изменений даёт `34/66` и `DIRTY`; старый/ошибочный Preview не разрешает Push,
+    Cancel ничего не пишет
+  source_section: '14.2'
+  source_line: 704
+  rule_refs:
+  - DATA-04
+  - ED-10
+  - ED-15
+  - ED-16
+  - ED-19
+  - ED-20
+  - ED-21
+  - ED-22
+  - ED-25
+  - ED-26
+  task_refs:
+  - TASK-03
+  - TASK-04
+  - TASK-05
+- id: AC-Q-01
+  scenario: Clean clone + README + `.env.example`
+  expected: Воспроизводимый запуск приложения без секретов в репозитории
+  source_section: '14.3'
+  source_line: 712
+  rule_refs:
+  - SCP-04
+  - DATA-07
+  - ENG-02
+  - ENG-10
+  - ENG-13
+  task_refs:
+  - TASK-05
+- id: AC-Q-02
+  scenario: '`alembic upgrade head` на пустой БД и повторно'
+  expected: Успех, архивная таблица и constraints существуют
+  source_section: '14.3'
+  source_line: 713
+  rule_refs:
+  - DATA-01
+  - DATA-02
+  - DATA-07
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-Q-03
+  scenario: pytest без внешнего API
+  expected: Все unit/contract/API/integration-with-fakes тесты проходят
+  source_section: '14.3'
+  source_line: 714
+  rule_refs:
+  - INT-09
+  - ENG-07
+  task_refs:
+  - TASK-03
+  - TASK-05
+- id: AC-Q-04
+  scenario: Ruff lint/format + mypy + pre-commit
+  expected: Все проверки зелёные
+  source_section: '14.3'
+  source_line: 715
+  rule_refs:
+  - ENG-03
+  - ENG-05
+  - ENG-06
+  task_refs:
+  - TASK-01
+  - TASK-05
+- id: AC-Q-05
+  scenario: GitHub Actions
+  expected: CI зелёный без секретов Keitaro
+  source_section: '14.3'
+  source_line: 716
+  rule_refs:
+  - INT-09
+  - ENG-08
+  - ENG-10
+  task_refs:
+  - TASK-01
+  - TASK-05
+- id: AC-Q-06
+  scenario: Keitaro 401/404/429/5xx, invalid JSON, timeout
+  expected: Корректная категория ошибки, нет ложного успеха, утечки ключа и массовых Removed
+  source_section: '14.3'
+  source_line: 717
+  rule_refs:
+  - INT-02
+  - INT-03
+  - ENG-07
+  - ED-07
+  - ED-26
+  task_refs:
+  - TASK-01
+  - TASK-02
+  - TASK-04
+  - TASK-05
+- id: AC-Q-07
+  scenario: Сетевой сбой после потенциальной записи
+  expected: Нет автоматического слепого повтора; пользователь знает, что исход не подтверждён
+  source_section: '14.3'
+  source_line: 718
+  rule_refs:
+  - INT-05
+  - INT-06
+  - ED-26
+  task_refs:
+  - TASK-02
+  - TASK-04
+  - TASK-05
+- id: AC-Q-08
+  scenario: Проверка логов и репозитория
+  expected: Есть request/stage IDs, нет credentials/token, private files игнорируются
+  source_section: '14.3'
+  source_line: 719
+  rule_refs:
+  - ENG-10
+  - ENG-11
+  - ED-26
+  task_refs:
+  - TASK-01
+  - TASK-05
+- id: AC-Q-09
+  scenario: Ручной live smoke на выделенной кампании
+  expected: Доказаны create, Fetch, Add, Push, Remove, архив, Bring Back, Pin и readback
+  source_section: '14.3'
+  source_line: 720
+  rule_refs:
+  - SCP-02
+  - INT-09
+  task_refs:
+  - TASK-05
+- id: AC-Q-10
+  scenario: При нецелевом stream update
+  expected: Не повреждены filters/action/redirect/position и прочие remote-настройки
+  source_section: '14.3'
+  source_line: 721
+  rule_refs:
+  - INT-07
+  task_refs:
+  - TASK-04
+  - TASK-05
+definition_of_done:
+  source_section: '17'
+  items_verbatim:
+  - Создание кампании по Name/GEO/Offer ID подтверждено на выделенной кампании тестового Keitaro.
+  - У кампании два потока, правильные домен/группа/источник и порядок GEO → Google / fallback → Offer.
+  - Работают Fetch, Add, Remove, Bring Back **до и после Push**, Push, Cancel и Pin/Unpin.
+  - Внешнее удаление из Keitaro превращает ранее известную привязку в архивную только после успешного полного Fetch.
+  - Fetch не нормализует увиденные `25/25`; Preview считает активные доли и pinned-остаток правильно (`25/38/37`).
+  - 'Контракт `SNAPSHOT`/`RECALCULATED` выполняется: при одинаковых базовых данных, режиме, упорядоченном активном
+    составе и полном наборе Pin результаты расчёта Preview и Push совпадают; `Unpin` в режиме перерасчёта обновляет
+    доли; полное возвращение к базовым IDs **и** Pin восстанавливает CLEAN с исходными долями.'
+  - Push сверяет remote `base_revision` и локальный `base_pin_revision`, повторно рассчитывает доли по тем же входам.
+    UI допускает только текущий успешный Preview; при неизменных базах его значения совпадают с рассчитанными Push.
+    Старый/ошибочный Preview не публикуется через UI.
+  - Архив и Pin сохраняются в SQLAlchemy, после подтверждённого Push выполняется readback.
+  - Не удаляются глобальные офферы, не изменяются нецелевые потоки и их поля.
+  - Неуспех, `PARTIAL`, `UNKNOWN` и `CONFLICT` не выдаются за успешный результат; нет слепых повторов мутаций.
+  - Есть автоматические тесты основных успешных и отрицательных сценариев, работающие без real Keitaro.
+  - Есть Alembic миграции, воспроизводимый запуск, `.env.example` и содержательный README.
+  - Выполняются Ruff, format check, `mypy`, pre-commit и GitHub Actions CI.
+  - В коде есть полезные типы/docstrings; ошибки диагностируются логами, секретов в репозитории и логах нет.
+  - Выполнены live smoke проверки на **выделенной** тестовой кампании.
+  - Фактические API-контракты **всех используемых операций из OPEN-01…06** (включая bindings, пустой stream, defaults
+    и сохраняемые при update поля) зафиксированы в `docs/keitaro-api-notes.md`; отсутствие CAS и запрет последнего
+    оффера допустимы как задокументированные ограничения.
+  - В итоговом README перечислены реальные ограничения (unknown result, отсутствие Keitaro CAS, временный draft,
+    пределы SQLite) — без обещаний недоказанных гарантий.
+illustrative_cases:
+  source: Выбранные уже принятые примеры §§4.5,6.1,6.3 и AC-E-13/19/20.
+  symbolic_ids: true
+  note: A/B/C — символы примера, не реальные ID инстанса Keitaro. Примеры не расширяют 37 AC и не являются тестами
+    готового приложения.
+  cases:
+  - id: EX-01
+    acceptance_refs:
+    - AC-E-13
+    source_section: '6.1'
+    base:
+      active_order:
+      - A
+      - B
+      shares:
+        A: 25
+        B: 25
+      pins:
+        A: 25
+      archive:
+      - C
+    action_paths:
+    - - Unpin(A)
+      - Bring Back(C)
+    - - Bring Back(C)
+      - Unpin(A)
+    expected_for_both:
+      active_order:
+      - A
+      - B
+      - C
+      shares:
+        A: 34
+        B: 33
+        C: 33
+      pins: {}
+      mode: RECALCULATED
+      dirty: true
+  - id: EX-02
+    acceptance_refs:
+    - AC-E-20
+    source_section: '6.1'
+    base:
+      active_order:
+      - A
+      - B
+      shares:
+        A: 25
+        B: 25
+      pins: {}
+      archive:
+      - C
+    actions:
+    - Bring Back(C)
+    - Pin(A=34)
+    - Remove(C)
+    expected:
+      active_order:
+      - A
+      - B
+      shares:
+        A: 34
+        B: 66
+      pins:
+        A: 34
+      mode: RECALCULATED
+      dirty: true
+  - id: EX-03
+    acceptance_refs:
+    - AC-E-19
+    source_sections:
+    - '6.1'
+    - '6.3'
+    base:
+      active_order:
+      - A
+      - B
+      shares:
+        A: 25
+        B: 25
+      pins: {}
+      archive:
+      - C
+    actions:
+    - Pin(A=25)
+    - Preview
+    - Push
+    expected:
+      shares:
+        A: 25
+        B: 25
+      persisted_pins:
+        A: 25
+      remote_put_required: false
+      local_save_required: true
+  - id: EX-04
+    acceptance_refs:
+    - AC-E-06
+    - AC-E-20
+    source_sections:
+    - '4.5'
+    - '6.1'
+    - '6.3'
+    base:
+      active_order:
+      - A
+      - B
+      shares:
+        A: 25
+        B: 25
+      pins: {}
+      archive:
+      - C
+    actions:
+    - Bring Back(C)
+    - Remove(C)
+    expected:
+      active_order:
+      - A
+      - B
+      shares:
+        A: 25
+        B: 25
+      pins: {}
+      mode: SNAPSHOT
+      dirty: false
+      push_required: false

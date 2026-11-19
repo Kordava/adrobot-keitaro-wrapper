@@ -1,0 +1,17 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; }
+body { margin: 0; background: #f7f8fa; color: #1e293b; }
+main { max-width: 850px; margin: 5vh auto; padding: 2.5rem; background: #fff; border: 1px solid #dbe0e8; border-radius: 16px; }
+.eyebrow { font-size: .72rem; letter-spacing: .1em; font-weight: 700; color: #64748b; }
+h1 { font-size: 2rem; }
+input { padding: .7rem; border-radius: 8px; border: 1px solid #aeb7c4; display: block; margin: .5rem 0 1rem; }
+button { border: 0; border-radius: 8px; padding: .8rem 1rem; background: #1e40af; color: #fff; cursor: pointer; }
+button:disabled { opacity: .5; cursor: wait; }
+#status { min-height: 1.5rem; color: #334155; }
+a { color: #1e40af; }
+.stream-card { border: 1px solid #dbe0e8; border-radius: 12px; padding: 1.2rem; margin: 1rem 0; }
+.stream-card h2 { font-size: 1.1rem; margin: 0 0 .4rem; }
+.stream-meta, .muted { font-size: .9rem; color: #64748b; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+:where(td, th) { padding: .65rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
+#stream-list { overflow-wrap: anywhere; }
+@media (max-width: 560px) { main { margin: 0; border-radius: 0; padding: 1.25rem; } table { font-size: .8rem; } :where(td, th) { padding: .4rem; } }

@@ -1,0 +1,451 @@
+schema_version: 1
+package_name: Adrobot AI implementation pack
+package_version: '0.1'
+created: '2026-11-19'
+stage: implementation_preparation
+implementation_status: not_implemented_or_verified_by_this_pack
+active_spec:
+  id: TZ-0.3.1
+  file: source/Adrobot_TZ_v0.3.1.md
+  version: 0.3.1
+  sha256: 60c961c44092e9fe9f66742f119d0acc8a125ccbbebae9d3fce3624138bb5aa5
+  lines: 825
+  note: Исправленная копия с уточнённой фразой DoD о базе, режиме, упорядоченном составе и полном Pin.
+excluded_duplicate:
+  uploaded_name: 02-Adrobot_TZ_v0.3.1.md
+  sha256: ecf0d3c3c0d9cd6a463b73c2c9edf6705a8974c31b6e2564ab1ee8105262b4d3
+  reason: Предыдущая копия с неуточнённой фразой DoD. В рабочий пакет как второй baseline не включена.
+historical_evidence:
+  file: reference/Adrobot_requirements_review_v0.2.zip
+  sha256: f78097e97b9ba89b2bad79e53d7c9b1468b21600eac3d7eb3c497ea9b74360dd
+  use: Архив исходников и предыдущего ревью. При необходимости открыть первичные PDF/MP4/TXT и реестр требований.
+    Старые v0.2/v0.3 и их открытые замечания не являются текущим контрактом.
+  closed_in_active_spec:
+  - V03-F01
+  - V03-C01
+  - V03-C02
+  - V03-C03
+  - V03-C05
+  provenance_limit: Отсутствие отдельных HR/WEBP в архиве обозначено в §0.1. Их содержимое здесь отдельно не проверялось.
+authority:
+- Принятое ТЗ source/Adrobot_TZ_v0.3.1.md задаёт действующий внутренний контракт и собственную иерархию источников
+  в §0.2.
+- YAML-файлы — производное представление с ссылками; они не заменяют исходник при расхождении и не добавляют требований.
+- 01_contract хранит правила, 02_acceptance — дословные AC/DoD, 03_api_discovery — оставшиеся зависимости, 04_tasks
+  — ссылки и порядок работы.
+- Внешние API-факты не заполнены предположениями. Их подтверждают в docs/keitaro-api-notes.md в ходе реализации.
+counts:
+  rules: 70
+  acceptance_criteria: 37
+  tasks: 5
+  open_api_questions: 6
+  organizational_questions: 1
+  source_sections: 64
+files:
+- path: README.md
+  purpose: Навигация для человека и стартовый запрос.
+- path: AGENTS.md
+  purpose: Короткие рабочие инструкции для ИИ-исполнителя.
+- path: 00_manifest.yaml
+  purpose: Активный источник, hashes, роли файлов и индекс разделов.
+- path: 01_contract.yaml
+  purpose: Извлечённые нормы и внутренние маршруты с provenance.
+- path: 02_acceptance.yaml
+  purpose: 37 дословных AC, DoD и четыре примера уже принятой математики.
+- path: 03_api_discovery.yaml
+  purpose: OPEN-01…07 и моменты применения зависимостей.
+- path: 04_tasks.yaml
+  purpose: Пять задач принятого плана и связь с правилами/AC.
+- path: source/Adrobot_TZ_v0.3.1.md
+  purpose: Неизменённое исправленное ТЗ.
+- path: reference/Adrobot_requirements_review_v0.2.zip
+  purpose: Историческое ревью и первичные материалы, загружаемые по необходимости.
+- path: checks/validate_pack.py
+  purpose: Проверка hashes, точной транскрипции и ссылок.
+- path: checks/validation.json
+  purpose: Результат структурной проверки пакета.
+section_index:
+- section: '0'
+  title: Источники, обязательность и границы достоверности
+  level: 2
+  line_start: 13
+  line_end: 57
+  sha256: 2e379793e5e669285e1ca19f8d328fcf08e260ba8e0ddbde7a890265de140a3c
+- section: '0.1'
+  title: Источники
+  level: 3
+  line_start: 15
+  line_end: 26
+  sha256: d6a518b2e7129da01fa8173350ca6538063a03802fca060fb25379016729674b
+- section: '0.2'
+  title: Классы требований
+  level: 3
+  line_start: 27
+  line_end: 36
+  sha256: 75fca730af959b67ed809af9758f436aec11604167ecb6c329c4e7d47b23362b
+- section: '0.3'
+  title: Что изменилось относительно v0.2
+  level: 3
+  line_start: 37
+  line_end: 48
+  sha256: 35d53f0b213c7c7329f332e36d54761f38d5a6b34fb719f00a78b7ec175eebd3
+- section: '0.4'
+  title: Уточнение v0.3.1 по результатам проверки v0.3
+  level: 3
+  line_start: 49
+  line_end: 57
+  sha256: 35efd67795422791b29f5596ae44cfc0018efc1dfb9302e422db2ea0f830aa50
+- section: '1'
+  title: Цель, результат и границы задачи
+  level: 2
+  line_start: 58
+  line_end: 83
+  sha256: 2f7ce8d8ed15aa86d3c00caa2e2213d8ff0850a718e6f4cb1033a11309b0c0e1
+- section: '1.1'
+  title: Вне объёма
+  level: 3
+  line_start: 69
+  line_end: 77
+  sha256: 84272dde75703a096976ec9b73d57ed4af6f2b564bc72a2b5ca5aa80c9332c65
+- section: '1.2'
+  title: Критерий достаточности
+  level: 3
+  line_start: 78
+  line_end: 83
+  sha256: 7a3ace9632d9099059bb6f052aa2b9c65cbe209a1104c5493fb71ca1fc1f5c8d
+- section: '2'
+  title: Модель предметной области и источники истины
+  level: 2
+  line_start: 84
+  line_end: 110
+  sha256: d0f63140afa0e28bee5e6fd048dc2aac68c241775a944892f8acda3bd6a1fec0
+- section: '3'
+  title: Часть I. Создание кампании
+  level: 2
+  line_start: 111
+  line_end: 157
+  sha256: 6b17bfeebf04803eea57b8a3aeebd91e4e5f0dbcf45ec6071f6e2eeb4cc32d2a
+- section: '3.1'
+  title: Вход и интерфейс
+  level: 3
+  line_start: 113
+  line_end: 127
+  sha256: 16ccb4e4d643c7fb863c9b9132c679218d4d8ea232cc9dc013af2a14fce99347
+- section: '3.2'
+  title: Созданная конфигурация
+  level: 3
+  line_start: 128
+  line_end: 141
+  sha256: 6c7f82dffbd7d19034d3e8e98e02db7d3b6a3570b9a2dd1044ac6579fb207889
+- section: '3.3'
+  title: Ход создания
+  level: 3
+  line_start: 142
+  line_end: 157
+  sha256: 8ffee1e5c556dfc60853fdd3e2b1691b6a37f2b78838eaa008801d4560cc9c5e
+- section: '4'
+  title: Часть II. Редактор — функциональный контракт
+  level: 2
+  line_start: 158
+  line_end: 242
+  sha256: 18c6514fc99a8f6e122efb2ef4c8646c12f7740b2da6c836577aaaaf9cf3e076
+- section: '4.1'
+  title: Загрузка и отображение
+  level: 3
+  line_start: 160
+  line_end: 176
+  sha256: 3491dc33058ee47c3caeac2fafb6f2c77e7ba8fc2bbac3179275d2c269b9f9a6
+- section: '4.2'
+  title: Добавление (`Add`)
+  level: 3
+  line_start: 177
+  line_end: 184
+  sha256: cf0fa17f0c81a92295c24aeb893d1d92293a44509949d825164f41d3e77a31ce
+- section: '4.3'
+  title: Удаление (`Remove`)
+  level: 3
+  line_start: 185
+  line_end: 192
+  sha256: e12f9f75df99620a2b52273dacbe6d0e802dda92c713b605f4863a2452ef2c3b
+- section: '4.4'
+  title: Восстановление (`Bring Back`)
+  level: 3
+  line_start: 193
+  line_end: 200
+  sha256: c97fed38df6f06f5fa702354c85a154a505fd057b0ba1a7c7cf15c22a2f5dd9d
+- section: '4.5'
+  title: Отмена (`Cancel`)
+  level: 3
+  line_start: 201
+  line_end: 209
+  sha256: 698b6e0c8947abe5ac053f0e1e4af99eaee6fcbd6ab3cc79c750846de94a89f0
+- section: '4.6'
+  title: Опубликованное и внешнее удаление
+  level: 3
+  line_start: 210
+  line_end: 233
+  sha256: 73152ca5cacbd4d29561971fdd0594469cae513cbb96783ec932a70c3685eca9
+- section: '4.7'
+  title: Поведение `Fetch` при ошибках
+  level: 3
+  line_start: 234
+  line_end: 242
+  sha256: d2b4e926af8b5c9a74149e902ad7e2676f8d37e9379998e1727496bea4b2b01a
+- section: '5'
+  title: Жизненный цикл черновика и публикации
+  level: 2
+  line_start: 243
+  line_end: 278
+  sha256: 48760fe2c591b68ea2efcd5eda98a62a72b213a55cd8eb18117301113f946991
+- section: '6'
+  title: Доли, Pin и правила расчёта
+  level: 2
+  line_start: 279
+  line_end: 349
+  sha256: a73644b27af4650893f978af5663616a525916e22fbbbccedbad3111568c3c1a
+- section: '6.1'
+  title: Два режима и переходы — нормативный DESIGN-контракт
+  level: 3
+  line_start: 281
+  line_end: 306
+  sha256: 6e5909c5f381fdce6ea6a76e9f3b8557d42426df4e73cc7e75c15aa4eed51585
+- section: '6.2'
+  title: Детерминированный алгоритм перерасчёта (DESIGN на базе S2)
+  level: 3
+  line_start: 307
+  line_end: 331
+  sha256: 2ea5c7ee54c0f631ece42485805c93965a4e7b8d36d9a2f8f16dfd3e26411f26
+- section: '6.3'
+  title: Один Python-алгоритм для Preview и Push
+  level: 3
+  line_start: 332
+  line_end: 340
+  sha256: 065d1a76e236faa99aac7458bf221d3f83e2ecca42af2773bba0c94b855e2527
+- section: '6.4'
+  title: Pin/Unpin и архив (DESIGN)
+  level: 3
+  line_start: 341
+  line_end: 349
+  sha256: c6186ea3f5c3a4b5e51734a74c7c806d827b614a4fe635a6eb8be55cf8142336
+- section: '7'
+  title: 'SQLAlchemy: локальная история и Pin'
+  level: 2
+  line_start: 350
+  line_end: 399
+  sha256: 1fe91315981c39c96fa9664721284f74cad4cf77ca61cce9dfa7dd70428ea425
+- section: '7.1'
+  title: Назначение локальной БД
+  level: 3
+  line_start: 352
+  line_end: 357
+  sha256: 7be0095ff47ba62eac07344700d423dea4a96ffd1899e4a2da4d8a895f1950e6
+- section: '7.2'
+  title: Таблица `known_offer_bindings` (проектная схема)
+  level: 3
+  line_start: 358
+  line_end: 373
+  sha256: dec54c4f629d7a8b5b3e1d21ba9966ec39e475caade44a45e0d8792bc9b3d164
+- section: '7.3'
+  title: Синхронизация при успешном Fetch
+  level: 3
+  line_start: 374
+  line_end: 383
+  sha256: 76287d3c92afc61812b4e7d4d17b731eb9128dd15c176ca350607dbe5235cbc3
+- section: '7.4'
+  title: Черновик, Push и Pin
+  level: 3
+  line_start: 384
+  line_end: 399
+  sha256: 38319bf2136c22eee962f3a3748cef50603f7a09b89a524f6d4d289cc8b47dce
+- section: '8'
+  title: Внутренние HTTP API Adrobot (проектный контракт)
+  level: 2
+  line_start: 400
+  line_end: 470
+  sha256: b998be4a6478e009461b3962532996ab5329c6a47df375e212c601bb3f28084a
+- section: '8.1'
+  title: '`Fetch` и `Preview` (не upstream JSON)'
+  level: 3
+  line_start: 416
+  line_end: 442
+  sha256: 9f55fa041883412f4c93c02ad0e9e055cd91c94327811d72adf767f87baa7f66
+- section: '8.2'
+  title: '`Push` и актуальность Preview (не upstream JSON)'
+  level: 3
+  line_start: 443
+  line_end: 461
+  sha256: cfbb186f6b92f72bb34e397c7af1e63cb330cc2d669717e7dc1b659ceb017c2c
+- section: '8.3'
+  title: Ошибки и типы результата
+  level: 3
+  line_start: 462
+  line_end: 470
+  sha256: a83a9603eef8f695c03848df7377b0bf75dd900b98a204ca9fab6a465778ba85
+- section: '9'
+  title: 'Keitaro Admin API: интеграционный контракт и исследование'
+  level: 2
+  line_start: 471
+  line_end: 506
+  sha256: 38635e5bbfbb2216dfcc83eaa2830034b5f4750c9372e48da7fec4007faffa3e
+- section: '9.1'
+  title: Что проверить на фактическом инстансе до live-записи
+  level: 3
+  line_start: 473
+  line_end: 486
+  sha256: 775e32980867c6b1aa57835b2577ba383f5828cd1e3f5a2497d987b035f69acd
+- section: '9.2'
+  title: Требования к клиенту
+  level: 3
+  line_start: 487
+  line_end: 497
+  sha256: ea64719e93f5598f5eafe2ed61732c6416a80b22c3fb8042e97f531da9d2aed5
+- section: '9.3'
+  title: Работа с тестовой средой
+  level: 3
+  line_start: 498
+  line_end: 506
+  sha256: 205727e9dd565a3927373027ea8590aa75dcc9ca708757d4c5f16f1fb9889618
+- section: '10'
+  title: Ошибки, конфликты и гарантии
+  level: 2
+  line_start: 507
+  line_end: 541
+  sha256: 3cf5002e875318c5cc8eaa34f6d1d224f4e1fcd77da7c10f57469f66cbe5356e
+- section: '10.1'
+  title: Классы ошибок
+  level: 3
+  line_start: 509
+  line_end: 525
+  sha256: af4be99141ff1ce49dea38ee25b4506315053914ed04f6ef7cad4104c56f9714
+- section: '10.2'
+  title: Защита от перезаписи чужих правок — явное DESIGN-решение
+  level: 3
+  line_start: 526
+  line_end: 531
+  sha256: 880f2e10c02301c1535c327d1f27269d17c358d0c1a889d522f3f39831890ba3
+- section: '10.3'
+  title: Чего система не обещает
+  level: 3
+  line_start: 532
+  line_end: 541
+  sha256: 7fbcc01d310eafddf89e29d824b6f37bac97a1c90b2ab1fc52937ed32e40702a
+- section: '11'
+  title: 'Архитектура: компактный модульный монолит'
+  level: 2
+  line_start: 542
+  line_end: 609
+  sha256: dc6be79e4fe342cbeb2e7a1b98377a8eaf6320f76bf345302b6d520711fccf90
+- section: '11.1'
+  title: Границы ответственности (ENG)
+  level: 3
+  line_start: 544
+  line_end: 569
+  sha256: fdbae4aa886231f93f86437bc7d71e4cc480b61a59a52860b157092cdc60c720
+- section: '11.2'
+  title: Предлагаемый компактный скелет
+  level: 3
+  line_start: 570
+  line_end: 599
+  sha256: 891b82719c292ee70f3cde154d90da8eb46027ba5c393332ee665152daaa598a
+- section: '11.3'
+  title: Асинхронность и ресурсы
+  level: 3
+  line_start: 600
+  line_end: 609
+  sha256: 79e305cbe3da9ff4b49f19c24cd52a5ea5032c0fb251e17f6b3fddaa7a551498
+- section: '12'
+  title: Безопасность, наблюдаемость, эксплуатация
+  level: 2
+  line_start: 610
+  line_end: 632
+  sha256: c6d9f6fc9c8505814e9065ff7e56e95604d48143ed0d27b688c221b8c864d975
+- section: '12.1'
+  title: Секреты и поверхность приложения (ENG)
+  level: 3
+  line_start: 612
+  line_end: 619
+  sha256: 252b8c68c0eee24d00d9289fac6797a52647d01c087d8472408fed323a145308
+- section: '12.2'
+  title: Логи и ошибки (ENG)
+  level: 3
+  line_start: 620
+  line_end: 626
+  sha256: 96f4a5150f949319edb611a949a3af568e32ea61530591dfc9b63093a4c99561
+- section: '12.3'
+  title: README (обязательно)
+  level: 3
+  line_start: 627
+  line_end: 632
+  sha256: 15307ce56763d4b0cc59aadc71a47267408c640f481a98f7de3c9b9f048c4837
+- section: '13'
+  title: Code quality и tooling — обязательный ENG baseline
+  level: 2
+  line_start: 633
+  line_end: 666
+  sha256: 1dca7f284eadb06ba7a8f7c3324a70f48ad0c5f647d8a6aeda475b630ad217f8
+- section: '14'
+  title: Критерии приёмки — функциональные сценарии
+  level: 2
+  line_start: 667
+  line_end: 726
+  sha256: b11adab6dd1a98a9826eeae5f0aab5d0c8713b6ffff669346325d60c00674c03
+- section: '14.1'
+  title: Создатель кампаний
+  level: 3
+  line_start: 669
+  line_end: 680
+  sha256: 352672bfffc6586fec2a2961f8b8cfd26adf3c0094728d5f8925cef878fee2f9
+- section: '14.2'
+  title: Редактор и архив
+  level: 3
+  line_start: 681
+  line_end: 707
+  sha256: fac77f1d62a0d7a7b47505847ddeb055a71bcfd71f6b21b5dac907979458775d
+- section: '14.3'
+  title: Инженерные проверки и сдача
+  level: 3
+  line_start: 708
+  line_end: 726
+  sha256: 66cc3454423686b463ada43b9799c355280a69ed22e64fd2cd6725ba09ce2816
+- section: '15'
+  title: План реализации на пять дней
+  level: 2
+  line_start: 727
+  line_end: 742
+  sha256: e2ff5a84512cf89a33814f38a78aed194b405097f11096da494d441058187a78
+- section: '16'
+  title: Открытые вопросы и реестр решений
+  level: 2
+  line_start: 743
+  line_end: 777
+  sha256: e4b738ac4f0c1690024d362a9afba7f57ab767099d3557eed91d2c794985a947
+- section: '16.1'
+  title: OPEN — действительно требуют подтверждения
+  level: 3
+  line_start: 745
+  line_end: 756
+  sha256: d50a85b8f73c76e22b31425229a291ce1811635d7b37bb8f9226c5e5b0b9a930
+- section: '16.2'
+  title: Закрыто источниками или внутренним решением v0.3.1
+  level: 3
+  line_start: 757
+  line_end: 777
+  sha256: 62eb0d3e9e376f857a05ba69c16d55b34c5d692ae3e4d8f2bf0b5b064d014859
+- section: '17'
+  title: Definition of Done — единый обязательный список
+  level: 2
+  line_start: 778
+  line_end: 803
+  sha256: 82f44b1c0869c884b17cc35e4c77b91f06b8e44df18604240575d0b7612bf5b2
+- section: '18'
+  title: Трассируемость ключевых требований
+  level: 2
+  line_start: 804
+  line_end: 820
+  sha256: e65d7a8b3e4c38f57763c0e67cae5a34179e3abce917b74927d5aa6b358d197d
+- section: '19'
+  title: Следующий шаг после утверждения ТЗ
+  level: 2
+  line_start: 821
+  line_end: 825
+  sha256: d188291d9700a5adb4e97a3f0453512d8d1661b7f70df1cb3ef2dab0496f5b83

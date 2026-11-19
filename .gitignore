@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.venv/
+.env
+*.db
+*.sqlite3
+*.sqlite3-*
+*.log
+.DS_Store
+reference/
+checks/validation.json

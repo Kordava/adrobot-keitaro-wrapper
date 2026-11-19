@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "adrobot"
+version = "0.1.0"
+description = "Keitaro campaign wrapper (test assignment)"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "alembic>=1.13,<2",
+    "fastapi>=0.115,<1",
+    "httpx>=0.27,<1",
+    "jinja2>=3.1,<4",
+    "pydantic-settings>=2.5,<3",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn>=0.30,<1",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15,<2",
+    "pre-commit>=4,<5",
+    "pytest>=8,<10",
+    "ruff>=0.11,<1",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/adrobot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/adrobot"]
+strict = true
+warn_unreachable = true
+plugins = []

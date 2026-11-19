@@ -1,0 +1,1407 @@
+schema_version: 1
+baseline_ref: 00_manifest.yaml
+role: Derived operational extraction of the accepted specification; not a new specification.
+language: ru
+reading_rules:
+- Все выбранные REQ, DEMO-REQ, DESIGN и ENG обязательны в принятом объёме. DESIGN здесь не означает непринятое предложение.
+- Класс обозначает основное основание записи; точные формулировки и происхождение деталей проверяются по source_sections/source_ids.
+- api_gates ссылается на используемое исследование. Срок применения зависимости задан в 03_api_discovery.yaml; математический
+  расчёт, внутренние DTO и fake-тесты из-за отсутствия live API не блокируются.
+- verification описывает проверку уже принятого правила и не добавляет новый критерий приёмки.
+- Если сжатая запись расходится с исходным ТЗ, исправить производную запись по ТЗ. Не выбирать трактовку молча и
+  не добавлять функциональность.
+definitions:
+- term: '`Campaign`'
+  meaning: Кампания Keitaro, у которой есть ID, домен, группа, источник и потоки
+  source_section: '2'
+- term: '`Stream` / `Flow`'
+  meaning: Поток Keitaro; может содержать офферы либо выполнять другое действие, например redirect
+  source_section: '2'
+- term: '`Offer`'
+  meaning: Глобальная уже существующая сущность Keitaro с ID
+  source_section: '2'
+- term: '`Offer binding`'
+  meaning: '**Привязка** оффера к конкретному потоку; именно её создаёт/убирает редактор'
+  source_section: '2'
+- term: '`Active`'
+  meaning: Привязка присутствует в текущей конфигурации Keitaro либо включена в редактируемый черновик
+  source_section: '2'
+- term: '`Removed`'
+  meaning: Привязка была известна Adrobot, но сейчас отсутствует в Keitaro или помечена к удалению в черновике
+  source_section: '2'
+- term: '`Displayed share`'
+  meaning: Целочисленная доля, показанная пользователю; её связь с полями Keitaro устанавливается API mapping
+  source_section: '2'
+- term: '`Pinned share`'
+  meaning: Локальная настройка Adrobot, фиксирующая долю конкретной активной привязки при следующем перераспределении
+  source_section: '2'
+- term: '`Snapshot`'
+  meaning: Последнее успешно прочитанное и валидированное состояние Keitaro для данного потока **и базовые локальные
+    Pin** на момент Fetch/подтверждённого Push
+  source_section: '2'
+- term: '`Draft`'
+  meaning: Неопубликованные изменения относительно snapshot, в том числе добавление/удаление/восстановление/Pin
+  source_section: '2'
+- term: '`Draft mode`'
+  meaning: '`SNAPSHOT` — показывать считанные доли; `RECALCULATED` — пересчитать по текущему составу и Pin'
+  source_section: '2'
+- term: '`base_pin_revision`'
+  meaning: Отпечаток базового набора ранее известных привязок и их Pin, используемый для best-effort сверки локальных
+    настроек при Push
+  source_section: '2'
+rules:
+- id: SCP-01
+  class: DESIGN
+  statement: 'Соблюдать принятую иерархию: письменные требования S1, существенная бизнес-логика S2, подтверждённая
+    семантика API, затем DESIGN/ENG. DEMO-REQ обязателен; ENG является нашим обязательным стандартом, а DESIGN принят,
+    если не помечен OPEN. Справочная документация Keitaro не расширяет объём заказчика. OPEN блокирует только затрагиваемую
+    часть реализации; инженерное решение не меняет показанную продуктовую логику.'
+  source_sections:
+  - '0.1'
+  - '0.2'
+  source_ids: []
+  verification: У каждого решения различены подтверждённое поведение, принятое внутреннее правило и неподтверждённый
+    API-контракт.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: SCP-02
+  class: REQ
+  statement: 'Реализовать небольшое веб-приложение на FastAPI с SQLAlchemy: создатель кампаний и редактор существующих
+    потоков с историей привязок и Pin. Итоговые сценарии реально работают с тестовым Keitaro; моки допустимы в автоматических
+    тестах. Frontend произвольный, но все представленные действия, значения и статусы настоящие.'
+  source_sections:
+  - '1'
+  - '7.1'
+  - '11.1'
+  source_ids:
+  - REQ-01
+  - REQ-02
+  - REQ-03
+  verification: Оба пользовательских сценария выполняются через рабочий UI и подтверждаются в выделенном тестовом
+    Keitaro.
+  api_gates: []
+  acceptance_refs:
+  - AC-C-01
+  - AC-E-01
+  - AC-Q-09
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: SCP-03
+  class: DESIGN
+  statement: В базовый объём не входят создание/удаление глобальных Offer, лендинги и партнёрские сети, Meta/Facebook
+    и рекламные кабинеты, аналитика рекламных кампаний, CRM, сложный поиск кампаний, пользователи/роли, отдельная
+    страница архива, произвольный редактор процентов, Stats/Trends без реальных данных, микросервисы, брокеры, Redis/Celery,
+    Kubernetes, production-scale инфраструктура, автоматический откат удалённых сущностей и распределённая транзакция
+    с Keitaro.
+  source_sections:
+  - '1.1'
+  source_ids: []
+  verification: В плане и коде нет перечисленных самостоятельных функций или инфраструктуры без отдельного решения.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: SCP-04
+  class: REQ
+  statement: Сдать ссылку на GitHub-репозиторий, доступный проверяющим, и README с понятными инструкциями запуска
+    и миграций. Обязательны FastAPI и SQLAlchemy; открытая публикация самого write-интерфейса приложения не требуется.
+  source_sections:
+  - '0.1'
+  - '12.1'
+  - '12.3'
+  - '17'
+  source_ids: []
+  verification: Проверяющий имеет доступ к репозиторию и воспроизводит установку, миграции и запуск по README.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-01
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: SCP-05
+  class: OPEN_GATE
+  statement: Сохранить рабочий пятидневный план; точное начало срока и требуемые права проверяющих на GitHub остаются
+    организационным OPEN-07. Не считать его неизвестностью API и не блокировать им архитектуру.
+  source_sections:
+  - '15'
+  - '16.1'
+  source_ids:
+  - OPEN-07
+  verification: Начало срока и доступ к репозиторию явно зафиксированы к планированию сдачи; OPEN-07 не выдан за
+    закрытый API-факт.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: investigation_or_organizational_dependency
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-01
+  class: REQ
+  statement: Форма создания принимает обязательные непустое Name, Geo-код страны и Offer ID существующего оффера
+    Keitaro.
+  source_sections:
+  - '3.1'
+  source_ids:
+  - C-01
+  - C-02
+  - C-03
+  verification: У формы присутствуют три входа; пустое имя и отсутствующие обязательные значения не приводят к созданию.
+  api_gates: []
+  acceptance_refs:
+  - AC-C-01
+  - AC-C-03
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-02
+  class: DESIGN
+  statement: Принимать одиночный ISO country code или несколько через запятую, нормализовать пробелы и регистр,
+    убрать повторы. Строгую семантику списка GEO подтвердить на Keitaro; одиночный код остаётся обязательной базой.
+  source_sections:
+  - '3.1'
+  - '16.2'
+  source_ids:
+  - C-04
+  verification: Одиночный код и список проходят нормализацию; API-фильтр использует проверенную семантику.
+  api_gates:
+  - OPEN-01
+  acceptance_refs:
+  - AC-C-07
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-03
+  class: DESIGN
+  statement: Выбор оффера при создании поддерживает поиск существующих офферов по ID/названию с автодополнением
+    и возвращает действительный Offer ID.
+  source_sections:
+  - '3.1'
+  - '9.1'
+  source_ids:
+  - C-05
+  verification: Поиск выбирает существующий оффер и передаёт его ID, а не произвольное отображаемое имя.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-04
+  class: REQ
+  statement: Домен, группа и источник назначаются через Keitaro API именно созданной кампании.
+  source_sections:
+  - '3.1'
+  - '3.2'
+  source_ids:
+  - C-06
+  - C-12
+  verification: Readback целевой кампании подтверждает все три обязательных назначения.
+  api_gates:
+  - OPEN-01
+  - OPEN-05
+  acceptance_refs:
+  - AC-C-01
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-05
+  class: DESIGN
+  statement: Домен, группа и источник берутся из валидируемых конфигурируемых defaults; полноценные селекты необязательны.
+    В env используются найденные на инстансе ID/имена. Если defaults отсутствуют или недоступны, создание не выполняется
+    и выдаётся понятная ошибка. Не создавать новые группы/источники на лету и не считать домен образца, FORTESTS,
+    CPC, стоимость или UTM обязательными константами.
+  source_sections:
+  - '3.1'
+  source_ids:
+  - C-07
+  verification: Настройки приходят из конфигурации; неверные defaults останавливают Create до мутации; нет жёстко
+    вшитых значений образца.
+  api_gates:
+  - OPEN-05
+  acceptance_refs:
+  - AC-C-01
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-06
+  class: REQ
+  statement: 'Созданная кампания содержит ровно два потока: первый по приоритету принимает указанные GEO и направляет
+    на https://google.com; второй направляет не перехваченный первым трафик на выбранный Offer ID.'
+  source_sections:
+  - '3.2'
+  source_ids:
+  - C-09
+  - C-10
+  - C-11
+  verification: Создание и readback подтверждают два потока, GEO-redirect и fallback для остальных посетителей.
+  api_gates:
+  - OPEN-01
+  acceptance_refs:
+  - AC-C-02
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-07
+  class: DEMO-REQ
+  statement: 'Для создаваемой схемы настроить позиционный порядок обработки потоков: GEO-поток выше офферного.'
+  source_sections:
+  - '3.2'
+  - '3.3'
+  source_ids:
+  - C-13
+  verification: Подтверждены позиционная обработка и приоритет GEO перед fallback.
+  api_gates:
+  - OPEN-01
+  acceptance_refs:
+  - AC-C-02
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-08
+  class: DESIGN
+  statement: После создания выбранный оффер присутствует в fallback-потоке в единственном экземпляре.
+  source_sections:
+  - '3.2'
+  source_ids:
+  - C-14
+  verification: У fallback-потока одна привязка именно выбранного Offer ID.
+  api_gates:
+  - OPEN-01
+  acceptance_refs:
+  - AC-C-02
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: CRE-09
+  class: ENG
+  statement: До любых мутаций сервер проверяет имя, GEO, существование оффера и доступность defaults; ошибки входа
+    объясняются пользователю. Затем создаёт кампанию с атрибутами, GEO-поток и fallback, устанавливает/проверяет
+    порядок, перечитывает кампанию и потоки. SUCCESS с ID и ссылкой допустим только после совпадения ожидаемых ID,
+    настроек и порядка с фактическими.
+  source_sections:
+  - '3.1'
+  - '3.2'
+  - '3.3'
+  - '10.1'
+  source_ids:
+  - C-08
+  - C-15
+  verification: Неверные входы дают 422 до мутаций; успешный Create подтверждён readback, а не одним HTTP 2xx.
+  api_gates:
+  - OPEN-01
+  - OPEN-05
+  acceptance_refs:
+  - AC-C-01
+  - AC-C-03
+  - AC-C-06
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: DATA-01
+  class: DESIGN
+  statement: 'Keitaro является источником истины о текущем удалённом составе потоков и сохранённых долях. Локальная
+    SQLAlchemy-БД хранит собственные предметные сведения Adrobot: ранее известные привязки, имена для архива и Pin.
+    Не создавать полную локальную копию всех кампаний/потоков/офферов; обязательный persistent operation journal
+    и универсальная идемпотентность в модель не входят.'
+  source_sections:
+  - '2'
+  - '7.1'
+  source_ids: []
+  verification: Текущий состав читается из Keitaro, а локальная БД обеспечивает требуемую историю и Pin без второго
+    каталога текущих данных.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-07
+  - AC-E-08
+  - AC-E-09
+  - AC-Q-02
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: DATA-02
+  class: DESIGN
+  statement: 'Реализовать known_offer_bindings: обязательные campaign_id, stream_id, offer_id с составной уникальностью;
+    последнее подтверждённое offer_name; nullable integer pinned_share 1..100; last_seen_share как диагностическую
+    историческую величину; first_seen_at и last_seen_at в UTC; nullable removed_at в UTC. Если API допускает повторные
+    bindings одного Offer ID, проверить их идентичность и изменить ключ до реализации бизнес-логики, не теряя строки
+    молча.'
+  source_sections:
+  - '7.2'
+  - '16.1'
+  source_ids:
+  - OPEN-03
+  verification: ORM и миграция согласованы по полям/ограничениям; last_seen_share не выдаётся за актуальную удалённую
+    долю; ключ основан на проверенной идентичности binding.
+  api_gates:
+  - OPEN-03
+  acceptance_refs:
+  - AC-Q-02
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: DATA-03
+  class: DESIGN
+  statement: Синхронизировать архив только после полного валидного чтения потоков/привязок кампании со всеми страницами
+    выдачи. В короткой транзакции upsert присутствующих привязок обновляет имя, last_seen_share и last_seen_at,
+    сбрасывает removed_at и сохраняет Pin. Известным привязкам именно соответствующего потока, отсутствующим в полном
+    ответе, выставить removed_at, сохранив имя/Pin. Вернуть актуальные и архивные строки; архивные имеют Removed,
+    0 и Bring Back. Ошибка чтения/схемы не изменяет архив. Не восстанавливать неизвестную до первого Fetch историю;
+    известный архив переживает перезапуск через БД.
+  source_sections:
+  - '7.3'
+  - '10.1'
+  source_ids: []
+  verification: Полный Fetch обновляет только соответствующие привязки; неполный ответ не создаёт массовые Removed;
+    после рестарта известный архив доступен.
+  api_gates:
+  - OPEN-03
+  - OPEN-04
+  acceptance_refs:
+  - AC-E-09
+  - AC-E-15
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: DATA-04
+  class: DESIGN
+  statement: До Push добавления/удаления/Pin остаются в браузерном draft и не загрязняют архив; потеря неопубликованного
+    draft при закрытии/перезагрузке допустима с предупреждением. После подтверждённого Push короткая DB-транзакция
+    сохраняет прочитанные bindings, архивирует удалённые и обновляет Pin. Если remote write подтверждён, но локальная
+    фиксация не удалась, сообщить об изменённом Keitaro и неподтверждённой локальной синхронизации, предложить Fetch
+    и не выполнять второй слепой PUT.
+  source_sections:
+  - '2'
+  - '7.4'
+  - '10.1'
+  source_ids: []
+  verification: Cancel не оставляет staged-only записей; ошибка DB после remote write видна отдельно и не порождает
+    повтор мутации.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-03
+  - AC-E-18
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: DATA-05
+  class: DESIGN
+  statement: Fetch возвращает base_pinned_shares для всего известного набора, включая архив, и base_pin_revision
+    как детерминированный отпечаток канонического перечня известных offer_id и их pinned_share. Не включать last_seen
+    timestamps и не добавлять отдельное поле БД/журнал ради отпечатка. Preview использует переданную базу только
+    для расчёта; Push перечитывает локальные Pin и сверяет её. Обнаруженное изменение даёт 409 CONFLICT без незаметного
+    слияния или сброса чужих настроек; гарантия best-effort.
+  source_sections:
+  - '7.4'
+  - '10.2'
+  source_ids: []
+  verification: Архивные Pin входят в базу; изменение локальной базы обнаруживается перед Push; обновление last_seen
+    само по себе не меняет отпечаток.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-17
+  - AC-E-19
+  related_rules:
+  - INT-08
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: DATA-06
+  class: ENG
+  statement: 'SQLAlchemy Session принадлежит запросу/use-case и не разделяется конкурентно; общей глобальной Session
+    нет. Транзакции короткие и не удерживаются во время HTTP I/O. Для SQLite выбрать и документировать один последовательный
+    подход: async SQLAlchemy с aiosqlite либо sync с короткими вызовами без блокирования event loop; не смешивать
+    подходы хаотично.'
+  source_sections:
+  - '7.4'
+  - '11.3'
+  source_ids: []
+  verification: Сессии изолированы; сетевые обращения вне DB-транзакций; выбранный sync/async-подход явно описан
+    и не блокирует event loop.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: DATA-07
+  class: ENG
+  statement: Использовать SQLAlchemy 2.x и Alembic. alembic upgrade head создаёт согласованную схему на пустой БД
+    и повторно работает без потери данных. Для локального приложения достаточно SQLite; ограничения конкурентных
+    записей документируются. PostgreSQL и кластеризация не требуются.
+  source_sections:
+  - '7.4'
+  - '13'
+  - '17'
+  source_ids: []
+  verification: Миграция применяется с нуля и повторно; ORM и схема совпадают; путь запуска использует выбранную
+    SQLite-конфигурацию.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-01
+  - AC-Q-02
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-01
+  class: OPEN_GATE
+  statement: До фиксации затрагиваемого адаптера проверить фактический Keitaro и записать в docs/keitaro-api-notes.md
+    версию, Admin API base path, Api-Key, поля кампании/alias, реальные defaults, поиск офферов и пагинацию, полный
+    список потоков и их типы, создание GEO/fallback и порядок, binding identity/повторы, пустой offer-stream, семантику
+    долей и их преобразование, минимальный update/preserved fields и наличие conditional write. OPEN-03 проверяется
+    до ключа архива, OPEN-05 до Create, OPEN-06 до Push; OPEN-01/02 — до завершения соответствующих адаптеров. Не
+    выдумывать remote endpoints/JSON по нашим FastAPI-маршрутам. Отключённое создание исследовать при наличии; его
+    отсутствие, отсутствие CAS и сохранённый запрет пустого fallback допустимы как ограничения, а не повод расширять
+    продукт.
+  source_sections:
+  - '3.2'
+  - '9.1'
+  - '16.1'
+  - '17'
+  - '19'
+  source_ids:
+  - OPEN-01
+  - OPEN-02
+  - OPEN-03
+  - OPEN-04
+  - OPEN-05
+  - OPEN-06
+  verification: Для всех используемых контрактов OPEN-01…06 есть проверенные записи API mapping; неподтверждённые
+    поля не названы фактами.
+  api_gates:
+  - OPEN-01
+  - OPEN-02
+  - OPEN-03
+  - OPEN-04
+  - OPEN-05
+  - OPEN-06
+  acceptance_refs: []
+  requirement_status: investigation_or_organizational_dependency
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-02
+  class: ENG
+  statement: Keitaro adapter использует один конфигурируемый httpx.AsyncClient на lifespan с переиспользованием
+    соединений и корректным закрытием; внешняя orchestration асинхронна. Задать ненулевые ограниченные connect/read/write/pool
+    timeouts. Upstream origin фиксируется серверной конфигурацией и не задаётся формой; TLS verify включён.
+  source_sections:
+  - '9.2'
+  - '11.3'
+  - '12.1'
+  source_ids: []
+  verification: Нет нового клиента на каждый запрос, утечек ресурсов, неограниченных ожиданий, пользовательского
+    upstream URL или отключённой TLS-проверки.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-06
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-03
+  class: ENG
+  statement: 'Типизированно проверять важнейшие upstream-поля: отсутствующее обязательное поле или несовместимый
+    JSON является интеграционной ошибкой, а не пустым результатом. Различать 401/403, 404, 422, 429, 5xx, timeout
+    и сетевые ошибки. Ошибки входа дают 422 до мутаций; отсутствующие кампания/поток/оффер — 404 либо 422 по смыслу.
+    Ошибки чтения не обновляют запрошенные данные; невозможный Pin не допускает remote write. Выбранный запрет удаления
+    последнего активного оффера сохраняется до подтверждения поведения пустого fallback.'
+  source_sections:
+  - '9.2'
+  - '10.1'
+  source_ids: []
+  verification: Ошибочные ответы и входы получают явную категорию; данные не заменяются ложным пустым успехом; невалидная
+    команда не пишет в Keitaro.
+  api_gates:
+  - OPEN-04
+  acceptance_refs:
+  - AC-C-03
+  - AC-E-14
+  - AC-E-15
+  - AC-Q-06
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-04
+  class: ENG
+  statement: Результат remote-операции создания или публикации подтверждается readback сохранённых ID/значений;
+    одного HTTP 2xx недостаточно. Если PUT успешен, но readback не совпал или не позволил подтвердить запись, сообщить
+    UNKNOWN/неподтверждённый результат, не показывать ложный успех.
+  source_sections:
+  - '9.2'
+  - '10.1'
+  - '17'
+  source_ids: []
+  verification: Создание/обновление проверяется чтением; несовпадение и сбой readback не становятся SUCCESS.
+  api_gates:
+  - OPEN-01
+  - OPEN-02
+  acceptance_refs:
+  - AC-C-06
+  - AC-E-04
+  - AC-E-12
+  - AC-E-18
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-05
+  class: ENG
+  statement: При частичном создании вернуть PARTIAL, известный campaign_id и последний подтверждённый этап; не удалять
+    созданное автоматически и не повторять весь сценарий. При потере ответа на потенциальный POST/PUT вернуть UNKNOWN,
+    если отсутствие записи нельзя доказать, и предложить проверку Keitaro перед новой попыткой. Диагностический
+    лог и сведения в UI обязательны; отдельный журнал для сохранения операции после рестарта не требуется.
+  source_sections:
+  - '3.3'
+  - '10.1'
+  - '10.3'
+  source_ids: []
+  verification: Отказ между шагами сохраняет известные ID/этап в диагностике; потерянный ответ не вызывает автоматический
+    повтор и не трактуется как доказанный неуспех.
+  api_gates: []
+  acceptance_refs:
+  - AC-C-04
+  - AC-C-05
+  - AC-Q-07
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-06
+  class: ENG
+  statement: Автоповторы допускаются только для безопасных чтений с небольшим ограничением; автоматический повтор
+    мутации с неизвестным исходом запрещён. request_id/UUID, локальный fingerprint, readback и логирование не обеспечивают
+    удалённую дедупликацию или транзакцию Keitaro+SQLite. Не вводить восстановление RUNNING после падения, фоновые
+    компенсации и универсальный journal; не обещать непроверенные SLA, производительность или многопользовательскую
+    атомарность.
+  source_sections:
+  - '9.2'
+  - '10.3'
+  source_ids: []
+  verification: Retry-политика отделяет чтение от записи; документация и код не объявляют отсутствующие гарантии.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-07
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-07
+  class: ENG
+  statement: При обновлении менять только офферы и их доли целевого потока. Сохранить action, filters, redirects,
+    position, landings и остальные нецелевые настройки, GEO-поток и другие потоки. Если API требует full-object
+    PUT, формировать его из свежего снимка, сохраняя неизвестные поля, когда API это допускает.
+  source_sections:
+  - '9.2'
+  - '17'
+  source_ids: []
+  verification: Сравнение до/после целевого Push подтверждает сохранность всех нецелевых данных.
+  api_gates:
+  - OPEN-06
+  acceptance_refs:
+  - AC-E-16
+  - AC-Q-10
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-08
+  class: DESIGN
+  statement: Перед Push перечитать удалённую конфигурацию и локальные Pin и сверить base_revision и base_pin_revision.
+    Remote hash охватывает канонизированные поля целевого потока, которые update может перезаписать. Расхождение
+    возвращает 409 CONFLICT до remote write; черновик не удаляется без подтверждения пользователя и предлагается
+    Fetch. Это обязательная best-effort проверка; гонки между чтением/проверкой и remote/local фиксацией честно
+    описываются, CAS не заявляется.
+  source_sections:
+  - '10.2'
+  - '17'
+  source_ids: []
+  verification: Изменение remote или локальной базы обнаруживается до записи; UI сохраняет черновик; пределы конкурентной
+    защиты задокументированы.
+  api_gates:
+  - OPEN-06
+  acceptance_refs:
+  - AC-E-17
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: INT-09
+  class: ENG
+  statement: Начинать диагностику Keitaro с read-only запросов. Write smoke выполнять явной отдельной командой только
+    на созданной/выделенной тестовой кампании, не изменяя чужие рабочие кампании. Обычные pytest и CI не обращаются
+    к реальному Keitaro. До сдачи реально подтвердить Create, Fetch, Add, Push, Remove, архив, Bring Back, Pin и
+    readback.
+  source_sections:
+  - '9.3'
+  - '17'
+  - '19'
+  source_ids: []
+  verification: Обычный прогон безопасен без реальных ключей; результаты выделенного live smoke подтверждают обе
+    функции.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-03
+  - AC-Q-05
+  - AC-Q-09
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-01
+  class: ENG
+  statement: 'Сохранить компактный модульный монолит: UI хранит/показывает draft и обращается только к FastAPI;
+    routers/Pydantic валидируют и сериализуют; services координируют CreateCampaign, FetchEditor, PreviewEditor,
+    PushOffers; чистый domain содержит состояния/распределения; отдельные Keitaro adapter и SQLAlchemy отвечают
+    за внешние форматы и хранение. В routers нет raw Keitaro orchestration или математики; domain не импортирует
+    FastAPI, SQLAlchemy, httpx, HTML/JS. Protocol нужен только для реальной подмены в тестах; обычная функция допустима
+    вместо класса. Не создавать бессодержательные BaseService, RepositoryFactory/UnitOfWork, командные шины, каталоги
+    ради диаграммы или ненужные фоновые очереди.'
+  source_sections:
+  - '11.1'
+  - '11.2'
+  - '11.3'
+  source_ids: []
+  verification: Границы и зависимости читаемы; domain тестируется без инфраструктуры, а структура не содержит абстракций
+    без использующего их сценария.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-02
+  class: ENG
+  statement: Зафиксировать поддерживаемую версию Python, ориентир 3.12, использовать pyproject.toml и воспроизводимые
+    закреплённые зависимости/lock. uv — принятый ориентир; допустим pip с зафиксированными зависимостями, но README
+    и CI обязаны использовать один и тот же выбранный способ.
+  source_sections:
+  - '11.2'
+  - '13'
+  source_ids: []
+  verification: Чистый clone устанавливает выбранные версии одним описанным способом; локальные и CI-команды согласованы.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-01
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-03
+  class: ENG
+  statement: Использовать mypy в CI. Типизировать публичные функции, сервисы, границы данных и важные DTO; не применять
+    массовые необоснованные ignore.
+  source_sections:
+  - '13'
+  - '17'
+  source_ids: []
+  verification: mypy проходит; типы присутствуют на значимых границах, исключения точечные и объяснимые.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-04
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-04
+  class: ENG
+  statement: 'Писать содержательные docstrings у публичных классов/сервисов, функций распределения, Keitaro API-методов
+    и неочевидных контрактов: назначение, важные side effects и ошибки. Не заполнять тривиальные геттеры декоративным
+    текстом.'
+  source_sections:
+  - '13'
+  - '17'
+  source_ids: []
+  verification: Ревью подтверждает полезное описание нетривиальных контрактов, а не формальное повторение имени
+    функции.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-05
+  class: ENG
+  statement: Единые style gates — ruff check . и ruff format --check .; не добавлять второй formatter Black или
+    отдельный isort.
+  source_sections:
+  - '13'
+  - '17'
+  source_ids: []
+  verification: Обе команды завершаются успешно; форматирование и импорты обслуживает единый выбранный инструмент.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-04
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-06
+  class: ENG
+  statement: 'Настроить версионированные pre-commit hooks: Ruff lint/format, YAML/TOML, whitespace/EOF, conflict
+    markers, debug statements и private-key detection. pre-commit run --all-files должен проходить; полный pytest
+    на каждый pre-commit не требуется.'
+  source_sections:
+  - '13'
+  source_ids: []
+  verification: Все перечисленные быстрые hooks закреплены и проходят; полноценный тестовый прогон предусмотрен
+    в CI.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-04
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-07
+  class: ENG
+  statement: 'Использовать pytest для существенных успешных и отрицательных сценариев: unit, contract, HTTP/API
+    и интеграция с подставной инфраструктурой. По умолчанию тесты не обращаются к живому Keitaro. Критерий полноты
+    — обязательные кейсы и риски, а не формальные 80% покрытия; coverage допустим как ориентир.'
+  source_sections:
+  - '13'
+  - '17'
+  source_ids: []
+  verification: Обязательные сценарии и характерные отказы проверяются без реального ключа; нет искусственного обязательного
+    порога покрытия.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-03
+  - AC-Q-06
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-08
+  class: ENG
+  statement: GitHub Actions на push/PR запускает lint, format, mypy, unit/contract/API tests, миграции SQLite с
+    чистой БД и базовую проверку секретов. CI проходит без секретов и доступа к реальному Keitaro; успешность проверок
+    должна быть фактической.
+  source_sections:
+  - '13'
+  - '17'
+  source_ids: []
+  verification: Реальный workflow зелёный по всем обязательным шагам; обычные проверки независимы от upstream.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-05
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-09
+  class: ENG
+  statement: Использовать читаемые имена и небольшие функции; не оставлять TODO с невыполненной обязательной логикой.
+    Компромиссы излагать явно. Код и тесты, созданные ИИ, проходят те же lint/type/tests и проверку фактической
+    API-семантики, что остальной код.
+  source_sections:
+  - '13'
+  source_ids: []
+  verification: Ревью подтверждает завершённость обязательных функций и одинаковую проверку сгенерированного и написанного
+    вручную кода.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-10
+  class: ENG
+  statement: API-ключ находится только в backend settings. .env игнорируется Git, .env.example содержит плейсхолдеры.
+    Не раскрывать ключ, admin password, authorization headers или credential-bearing URLs в коде, ответах, traceback,
+    access log, README, screenshots или CI. Перед публикацией проверить рабочее дерево и git-историю на секреты.
+    По умолчанию слушать 127.0.0.1; internet write UI без отдельной авторизации, HTTPS и ограничений доступа в задание
+    не входит.
+  source_sections:
+  - '9.3'
+  - '12.1'
+  - '17'
+  source_ids: []
+  verification: Браузер/репозиторий/логи не содержат credentials; приложение локально по умолчанию; примеры конфигурации
+    безопасны.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-01
+  - AC-Q-05
+  - AC-Q-08
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-11
+  class: ENG
+  statement: Логи идут в stdout через стандартный Python logging со структурированными полями либо лёгким JSON-formatter.
+    Существенные операции содержат timestamp, level, request_id, action, stage, известные campaign/stream IDs, длительность
+    и error code. Ожидаемые ошибки дают безопасные читаемые ответы; неожиданные stack traces доступны только в серверном
+    логе без секретов; отдельный сложный tracing stack не нужен.
+  source_sections:
+  - '12.2'
+  - '17'
+  source_ids: []
+  verification: По логу различимы операция, стадия и причина отказа; публичный ответ не содержит внутреннюю трассировку
+    или секреты.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-08
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-12
+  class: ENG
+  statement: GET /health проверяет работоспособность процесса, не вызывает Keitaro и не выполняет запись.
+  source_sections:
+  - '12.2'
+  source_ids: []
+  verification: Проверка health не имеет remote или локальных mutating side effects.
+  api_gates: []
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-13
+  class: ENG
+  statement: README описывает две функции, Python/version requirements, установку, env, alembic upgrade head, запуск,
+    тесты, pre-commit/CI, краткую архитектуру, архив, оба режима draft, Pin/Fetch/Preview/Push, изолированный live
+    smoke, безопасность и реальные ограничения UNKNOWN, race, временного draft и SQLite. Обязателен один проверенный
+    путь запуска из чистого клона и docs/keitaro-api-notes.md; Docker/Compose, второй путь запуска, отдельные architecture.md/data-model.md
+    и ADR-комплект не обязательны. Для сложной детали допустим короткий дополнительный документ.
+  source_sections:
+  - '11.2'
+  - '12.3'
+  - '17'
+  source_ids: []
+  verification: README и API notes соответствуют фактическому проекту; чистый clone запускается без ручного исправления
+    инструкций.
+  api_gates: []
+  acceptance_refs:
+  - AC-Q-01
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ENG-15
+  class: ENG
+  statement: 'Считать работу готовой только при одновременном выполнении всего DoD: подтверждённые Create и редактор,
+    архив/Pin и оба режима, согласованные Preview/Push, сохранность нецелевых сущностей, честные PARTIAL/UNKNOWN/CONFLICT,
+    тесты без real upstream, миграции и clean-clone запуск, Ruff/format/mypy/pre-commit/CI, полезные типы/docstrings/логи,
+    отсутствие секретов, live smoke и проверенные используемые API-контракты OPEN-01…06. Сохранить трассировку обязательного
+    поведения к источникам и функциональной приёмке. Не объявлять документационную или mock-проверку доказательством
+    реальной интеграции.'
+  source_sections:
+  - '1.2'
+  - '17'
+  - '18'
+  - '19'
+  source_ids: []
+  verification: Каждый пункт DoD имеет выполненную проверку; реальная интеграция подтверждена отдельно от unit/contract-тестов.
+  api_gates:
+  - OPEN-01
+  - OPEN-02
+  - OPEN-03
+  - OPEN-04
+  - OPEN-05
+  - OPEN-06
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-01
+  class: DEMO-REQ
+  statement: Fetch streams from KT читает и отображает потоки выбранной существующей кампании. Для офферных потоков
+    показываются ID, имя, доля и состояние каждого известного оффера. Неофферные потоки тоже показываются как потоки,
+    без необходимости разбирать и выводить их фильтры, URL и redirect.
+  source_sections:
+  - '4.1'
+  source_ids:
+  - E-01
+  - E-02
+  - E-03
+  - E-04
+  verification: Открыть существующую кампанию с GEO-redirect и offer stream; увидеть оба потока и строки офферов.
+  api_gates:
+  - OPEN-02
+  - OPEN-03
+  - OPEN-04
+  acceptance_refs:
+  - AC-E-01
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-02
+  class: DEMO-REQ
+  statement: Пользователь находит и выбирает существующий оффер Keitaro для определённого потока. Add добавляет
+    его в неопубликованный состав; Keitaro до Push не меняется. Принятое изменение состава вызывает пересчёт долей
+    черновика по правилам режимов.
+  source_sections:
+  - '4.1'
+  - '4.2'
+  - '6.1'
+  source_ids:
+  - E-05
+  verification: Добавить четвёртый оффер к трём; Preview показывает 25/25/25/25, upstream остаётся прежним до Push.
+  api_gates:
+  - OPEN-03
+  acceptance_refs:
+  - AC-E-02
+  - AC-E-04
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-03
+  class: DEMO-REQ
+  statement: Remove исключает привязку из активного черновика. Строка остаётся приглушённой как Removed с 0% и Bring
+    Back; активные доли пересчитываются до Push. Push убирает только привязку из целевого потока, не глобальный
+    Offer. После успешного Push строка остаётся в архиве Adrobot и доступна для восстановления.
+  source_sections:
+  - '4.1'
+  - '4.3'
+  - '4.6'
+  source_ids:
+  - E-06
+  verification: Remove → Push → Fetch оставляет Removed/0%/Bring Back в обёртке; Offer существует глобально.
+  api_gates:
+  - OPEN-03
+  - OPEN-06
+  acceptance_refs:
+  - AC-E-05
+  - AC-E-07
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-04
+  class: DEMO-REQ
+  statement: Bring Back доступен для удалённой строки до публикации и для архивной строки после опубликованного
+    либо внешнего удаления. Он возвращает привязку в неопубликованный активный состав с пересчётом; Push восстанавливает
+    её в Keitaro.
+  source_sections:
+  - '4.1'
+  - '4.4'
+  - '4.6'
+  source_ids:
+  - E-06
+  verification: Восстановить строку до Push, после опубликованного удаления и после внешнего удаления с Fetch.
+  api_gates:
+  - OPEN-02
+  - OPEN-03
+  - OPEN-06
+  acceptance_refs:
+  - AC-E-06
+  - AC-E-08
+  - AC-E-11
+  - AC-E-12
+  related_rules:
+  - INT-04
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-05
+  class: DESIGN
+  statement: Повторное добавление одного offer_id в тот же поток запрещено в принятой модели; другая модель bindings
+    возможна только после подтверждения API. Bring Back для глобально отсутствующего Offer ID возвращает ошибку
+    валидации. Поток с внешне удалёнными всеми офферами сохраняет отображение известного локального архива и Bring
+    Back; пустой текущий список сам по себе не означает неофферный поток. При отсутствии истории тип определяется
+    по минимальным полям API без разбора URL и фильтров редиректа.
+  source_sections:
+  - '4.1'
+  - '4.2'
+  - '4.4'
+  - '7.2'
+  source_ids: []
+  verification: Отклонить дубликат и возврат несуществующего Offer; показать архив известного пустого offer stream.
+  api_gates:
+  - OPEN-03
+  - OPEN-04
+  acceptance_refs: []
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-06
+  class: DEMO-REQ
+  statement: После внешнего удаления ранее известных привязок из Keitaro успешный Fetch оставляет присутствующие
+    строки активными с фактическими долями, а отсутствующие известные строки показывает как Removed, 0%, Bring Back.
+    Восстановление этих строк выполняется через обычные Bring Back и Push.
+  source_sections:
+  - '4.6'
+  - '7.3'
+  source_ids:
+  - E-02
+  - E-06
+  verification: После внешнего удаления C и D Fetch показывает их в архиве, а A и B сохраняет с фактическими значениями.
+  api_gates:
+  - OPEN-03
+  - OPEN-04
+  acceptance_refs:
+  - AC-E-09
+  - AC-E-10
+  - AC-E-11
+  - AC-E-12
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-07
+  class: ENG
+  statement: Синхронизация архива допустима только после успешного полного чтения нужных потоков и всех страниц
+    выдачи с валидацией схем. Таймаут, частичный ответ, ошибка авторизации, 5xx или невалидный JSON не переводят
+    известные строки в Removed и не перезаписывают архив ошибочными данными; прежнее состояние UI сохраняется с
+    ошибкой. Fetch при изменённом черновике требует явного подтверждения его сброса.
+  source_sections:
+  - '4.7'
+  - '7.3'
+  source_ids:
+  - E-10
+  verification: Неполный или ошибочный Fetch не меняет архив; Fetch поверх DIRTY запрашивает подтверждение сброса.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-15
+  - AC-Q-06
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-08
+  class: DESIGN
+  statement: Успешный Fetch и подтверждённый Push фиксируют базовый упорядоченный список активных привязок, фактически
+    прочитанные доли, известный архив, полный базовый набор Pin, base_revision и base_pin_revision. Начальное состояние
+    черновика — SNAPSHOT/CLEAN. HTML-страница /editor и JSON-Fetch /api/campaigns/{campaign_id}/editor имеют разные
+    назначения; это маршруты Adrobot, не Keitaro Admin API.
+  source_sections:
+  - '5'
+  - '6.1'
+  - '8'
+  - '8.1'
+  source_ids: []
+  verification: JSON-Fetch возвращает полную базу, архив и обе ревизии; новая база после Push появляется только
+    после подтверждения.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-04
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-09
+  class: DEMO-REQ
+  statement: Fetch/readback показывает фактически считанные доли без перераспределения и нормализации. Полученные
+    25/25 остаются 25/25, а не 50/50. Это отображение конфигурации, не утверждение о вероятностях трафика; raw share
+    нельзя считать процентом без подтверждённого API mapping.
+  source_sections:
+  - '6.1'
+  - '6.2'
+  source_ids: []
+  verification: После внешнего удаления Fetch сохраняет 25/25; алгоритм распределения до 100 для SNAPSHOT не вызывается.
+  api_gates:
+  - OPEN-02
+  acceptance_refs:
+  - AC-E-10
+  - AC-E-19
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-10
+  class: DESIGN
+  statement: Принятое Add, Remove или Bring Back, реально меняющее активный состав, устанавливает RECALCULATED и
+    применяет алгоритм пересчёта. Отклонённое действие не меняет предыдущий валидный черновик, режим или доли. SNAPSHOT
+    допустим только при неизменном относительно базы активном составе, кроме приоритетного правила полного возврата,
+    которое само восстанавливает SNAPSHOT.
+  source_sections:
+  - '6.1'
+  - '6.3'
+  - '8.1'
+  source_ids: []
+  verification: Принятое изменение состава включает RECALCULATED; невалидное действие оставляет прежнее валидное
+    состояние.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-02
+  - AC-E-05
+  - AC-E-14
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-11
+  class: DEMO-REQ
+  statement: Pin закрепляет текущую отображаемую целочисленную долю конкретной привязки в момент принятого действия.
+    При перераспределении активного состава закреплённые доли сохраняются, а остаток делят незакреплённые. Свободное
+    изменение процента руками не требуется.
+  source_sections:
+  - '4.1'
+  - '6.2'
+  - '6.4'
+  source_ids:
+  - E-07
+  verification: Закрепить A=25 и восстановить C при активных A/B; получить A=25, B=38, C=37 в согласованном порядке.
+  api_gates:
+  - OPEN-02
+  acceptance_refs:
+  - AC-E-11
+  - AC-E-12
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-12
+  class: DESIGN
+  statement: Pin/Unpin в SNAPSHOT меняет только локальное намерение, не пересчитывая считанные доли; отличающиеся
+    от базы Pin создают DIRTY. Pin/Unpin в RECALCULATED сразу вызывает новый Preview по текущему составу и текущим
+    Pin. Невалидное действие оставляет предыдущий валидный результат.
+  source_sections:
+  - '5'
+  - '6.1'
+  - '6.4'
+  source_ids:
+  - E-07
+  verification: Оба порядка Unpin(A) → Bring Back(C) и Bring Back(C) → Unpin(A) при базе A25/B25 с Pin(A25) дают
+    34/33/33.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-13
+  - AC-E-19
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-13
+  class: DESIGN
+  statement: В RECALCULATED fixed равен сумме Pin активных привязок, free = 100 - fixed, n — числу активных незакреплённых.
+    При n > 0 и free > 0 каждому назначается free // n, а free % n единиц распределяются по одной в стабильном порядке
+    активных офферов. Архивные строки показывают 0%, не входят в fixed и не резервируют доли. Результат domain выражается
+    целыми percentage points; преобразование в поля Keitaro выполняется только по подтверждённому mapping.
+  source_sections:
+  - '6.2'
+  source_ids: []
+  verification: Проверить 34/33/33, 25/25/25/25, 20/20/20/20/20 и 25/38/37; одинаковые упорядоченные входы дают
+    одинаковые числа.
+  api_gates:
+  - OPEN-02
+  acceptance_refs:
+  - AC-E-02
+  - AC-E-03
+  - AC-E-11
+  - AC-E-12
+  - AC-E-13
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-14
+  class: DESIGN
+  statement: При n == 0 композиционное изменение допустимо только при fixed == 100. Fixed > 100, free < 0, n > 0
+    при free == 0, недопустимые нулевые или отрицательные доли запрещают публикацию с понятной ошибкой. Ноль активных
+    офферов в редактируемом fallback-потоке запрещён принятой моделью до подтверждения поведения пустого потока.
+    Значение сохранённого Pin — integer от 1 до 100 либо отсутствие закрепления.
+  source_sections:
+  - '6.2'
+  - '7.2'
+  source_ids: []
+  verification: Невозможная композиция и удаление последнего активного fallback-оффера не вызывают remote write.
+  api_gates:
+  - OPEN-04
+  acceptance_refs:
+  - AC-E-14
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-15
+  class: DESIGN
+  statement: 'Полное совпадение итогового упорядоченного активного состава и всего набора Pin, включая архивные
+    строки, с базой имеет приоритет в любом режиме: восстановить исходные считанные доли, SNAPSHOT/CLEAN, без ненужного
+    Push. Совпадения только IDs недостаточно, если Pin изменились; RECALCULATED при этом не сбрасывается в SNAPSHOT.'
+  source_sections:
+  - '4.5'
+  - '5'
+  - '6.1'
+  - '6.3'
+  source_ids: []
+  verification: Полный возврат восстанавливает 25/25; Bring Back(C) → Pin(A34) → Remove(C) из базы A25/B25 без Pin
+    даёт 34/66 и DIRTY.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-06
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-16
+  class: DESIGN
+  statement: 'Cancel локально восстанавливает последнюю подтверждённую базу: активный состав, считанные доли, архив,
+    все Pin, SNAPSHOT/CLEAN и валидный базовый Preview. Серверного Cancel API и write-запросов к Keitaro нет. Новые,
+    добавленные и затем отменённые офферы не сохраняются в архив; Pin отменённого staged-only добавления также исчезает
+    из черновика.'
+  source_sections:
+  - '4.5'
+  - '5'
+  - '6.4'
+  - '7.4'
+  - '8.3'
+  source_ids:
+  - E-06
+  verification: Четыре по 25 → Add пятого → Cancel возвращает четыре по 25; пятый и его Pin отсутствуют в постоянном
+    архиве.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-03
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-17
+  class: DESIGN
+  statement: Поля base_pinned_shares и pinned_shares представляют полное состояние закреплений, не patch. Карта
+    содержит записи только с действующим Pin; отсутствующий ключ означает Unpin. Пустая карта снимает Pin у всех
+    известных привязок потока и новых staged-only строк, включая архив. Неизменённый архивный Pin обязан присутствовать
+    в полном наборе. Отсутствие всего поля pinned_shares — ошибка валидации; null не означает «оставить без изменения».
+  source_sections:
+  - '6.4'
+  - '8.1'
+  - '8.2'
+  source_ids: []
+  verification: Полный набор сохраняет архивный Pin; удаление ключа снимает его; отсутствие поля отклоняется.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-19
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-18
+  class: DESIGN
+  statement: Pin хранится по привязке campaign/stream/offer и сохраняется у архивной строки, не резервируя долю
+    до Bring Back. При невозможном восстановлении Preview сообщает ограничение и позволяет снять конфликтующий Pin.
+    Если внешний пользователь изменил долю закреплённого оффера в Keitaro, Fetch показывает фактическую долю и отдельное
+    локальное намерение Pin с предупреждением; принудительного upstream изменения нет.
+  source_sections:
+  - '4.4'
+  - '6.4'
+  - '7.2'
+  source_ids: []
+  verification: Архивный Pin учитывается только после восстановления; внешнее изменение доли не перезаписывается
+    Fetch.
+  api_gates:
+  - OPEN-02
+  - OPEN-03
+  acceptance_refs:
+  - AC-E-19
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-19
+  class: ENG
+  statement: 'Preview и Push используют одну чистую, детерминированную, типизированную Python domain-функцию без
+    I/O. Логические входы: base_offers с порядком и считанными значениями, base_pinned_shares, упорядоченные active_offer_ids,
+    полный pinned_shares и mode. Выход содержит валидированное состояние, доли, dirty и ошибки ограничений. JavaScript
+    не реализует отдельный алгоритм процентов.'
+  source_sections:
+  - '6.3'
+  - '8.1'
+  - '8.2'
+  source_ids: []
+  verification: Одинаковые базовые данные, порядок IDs, полный Pin и режим дают одинаковые результаты Preview и
+    расчёта Push.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-04
+  - AC-E-13
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-20
+  class: DESIGN
+  statement: 'Preview stateless: не читает Keitaro на каждом нажатии и ничего не записывает в Keitaro или БД. Клиентская
+    база допустима только для нефиксирующего расчёта; проверяются диапазоны, уникальность и согласованность. Возвращаются
+    нормализованные состав, Pin, mode, доли, статусы, dirty и validation_error; при недопустимом изменении UI сохраняет
+    последний валидный черновик.'
+  source_sections:
+  - '5'
+  - '6.3'
+  - '8.1'
+  source_ids: []
+  verification: Preview работает без upstream вызовов и DB writes; невалидная попытка не заменяет последний валидный
+    результат.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-02
+  - AC-E-14
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-21
+  class: DESIGN
+  statement: 'UI сериализует Preview: до завершения запроса действия и Push для этого черновика заблокированы. UI
+    хранит точные канонические входы последнего успешного Preview и его ответ. Изменение состава, Pin или режима
+    инвалидирует Preview; Push допускается только для актуального успешного результата. Ошибочный, отставший или
+    незавершённый Preview не разрешает публикацию.'
+  source_sections:
+  - '5'
+  - '8.2'
+  source_ids: []
+  verification: Нельзя опубликовать черновик во время Preview либо после устаревшего или ошибочного ответа.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-04
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-22
+  class: DESIGN
+  statement: 'Push использует реальные повторно прочитанные базы и те же канонические active_offer_ids, полный pinned_shares
+    и mode, что актуальный Preview, повторно применяя ту же domain-функцию. Серверную историю Preview хранить не
+    требуется: совпадение с показанным результатом при неизменных базах обеспечивается одинаковыми входами и актуальностью
+    UI. Прямой API-вызов независимо валидируется, но не получает обещания сверки с историей Preview.'
+  source_sections:
+  - '6.3'
+  - '8.2'
+  source_ids: []
+  verification: Push при неизменных подтверждённых базах рассчитывает в точности показанный актуальным Preview состав
+    и доли.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-04
+  - AC-E-13
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-23
+  class: ENG
+  statement: Если remote состав или доли должны измениться, Push применяет подготовленную конфигурацию, повторно
+    читает Keitaro и проверяет совпадение. Несовпадающий readback не считается SUCCESS. Новая база и CLEAN/SNAPSHOT
+    устанавливаются только после необходимого подтверждения remote результата и локальных настроек; клиентские готовые
+    проценты не являются источником истины.
+  source_sections:
+  - '4.2'
+  - '5'
+  - '6.3'
+  - '6.4'
+  - '7.4'
+  - '8.2'
+  - '8.3'
+  source_ids:
+  - E-06
+  verification: Push подтверждает ID и значения readback; несовпадение оставляет исход неподтверждённым и не очищает
+    черновик как успешный.
+  api_gates:
+  - OPEN-02
+  - OPEN-03
+  - OPEN-06
+  acceptance_refs:
+  - AC-E-04
+  - AC-E-08
+  - AC-E-12
+  - AC-E-18
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-24
+  class: DESIGN
+  statement: Если изменились только Pin, а remote состав и доли совпадают с базой, Push сохраняет только локальные
+    настройки без upstream PUT и подтверждает их чтением. В SNAPSHOT исходные 25/25 не нормализуются. В RECALCULATED
+    изменение Pin/Unpin может изменить доли и тогда требует соответствующего remote PUT.
+  source_sections:
+  - '5'
+  - '6.3'
+  - '6.4'
+  - '8.2'
+  - '8.3'
+  source_ids: []
+  verification: Pin-only Preview/Push для SNAPSHOT A25/B25 сохраняет 25/25 и делает только локальную запись.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-19
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-25
+  class: DESIGN
+  statement: View in KT открывает конкретную кампанию в админке. Неопубликованный черновик заметен через DIRTY или
+    выделение потока и действия публикации/отмены. Изменение только локальных Pin также остаётся DIRTY до подтверждённого
+    локального Push, если Pin отличается от базы.
+  source_sections:
+  - '4.1'
+  - '5'
+  source_ids:
+  - E-08
+  - E-09
+  verification: Ссылка ведёт на выбранную кампанию; неопубликованное pin-only изменение видно как DIRTY.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-20
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+- id: ED-26
+  class: ENG
+  statement: Ошибки чтения и записи явно показываются, не подменяются пустой таблицей и HTTP 200. Ошибка содержит
+    машинно-читаемый code, безопасное message и request_id, без credentials и traceback. FAILED, UNKNOWN и CONFLICT
+    описывают исход команды, не долговечный workflow; черновик сохраняется. Во время SAVING повторный Push заблокирован,
+    автоматического повтора неизвестной записи нет; UI-блокировка не объявляется глобальной идемпотентностью.
+  source_sections:
+  - '4.1'
+  - '5'
+  - '8.3'
+  source_ids:
+  - E-10
+  verification: Ошибка upstream видна и сохраняет draft; повторный Push во время SAVING и слепой повтор UNKNOWN
+    отсутствуют.
+  api_gates: []
+  acceptance_refs:
+  - AC-E-18
+  - AC-E-20
+  - AC-Q-06
+  - AC-Q-07
+  - AC-Q-08
+  requirement_status: required_by_active_spec
+  source_file: source/Adrobot_TZ_v0.3.1.md
+internal_http_routes:
+  upstream_keitaro_routes: false
+  source_section: '8'
+  note: Маршруты Adrobot из ТЗ. Поля иллюстративных JSON могут адаптироваться; их пользовательская семантика нормативна.
+    Это не установленные endpoints Keitaro.
+  routes:
+  - method: GET
+    path: /
+    purpose: Создатель кампаний / ссылки на редактор
+    source_section: '8'
+  - method: GET
+    path: /editor
+    purpose: Страница редактора
+    source_section: '8'
+  - method: GET
+    path: /api/offers?query=...
+    purpose: Поиск существующих офферов в Keitaro, только чтение
+    source_section: '8'
+  - method: GET
+    path: /api/reference-data
+    purpose: Проверка/получение настроек домена, группы, источника, только чтение
+    source_section: '8'
+  - method: POST
+    path: /api/campaigns
+    purpose: Создать кампанию с двумя потоками
+    source_section: '8'
+  - method: GET
+    path: /api/campaigns/{campaign_id}/editor
+    purpose: Fetch потоков; **локальная синхронизация архива**, без remote write
+    source_section: '8'
+  - method: POST
+    path: /api/campaigns/{campaign_id}/streams/{stream_id}/preview
+    purpose: Чистый пересчёт черновика без изменений БД/Keitaro
+    source_section: '8'
+  - method: PUT
+    path: /api/campaigns/{campaign_id}/streams/{stream_id}/offers
+    purpose: Push желаемого состава и Pin, сравнение состояния, remote write/readback/локальный sync
+    source_section: '8'
+  - method: GET
+    path: /health
+    purpose: Проверка работоспособности процесса, без мутации
+    source_section: '8'
