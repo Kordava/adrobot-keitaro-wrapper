@@ -1,9 +1,9 @@
-# Adrobot — TASK-01 read-only Fetch (v0.3)
+# Adrobot
 
 Adrobot is intended to create Keitaro campaigns and edit their offer bindings.
-This is a **partial implementation**: only read-only Fetch is available. The
-normative requirements remain in `source/Adrobot_TZ_v0.3.1.md`; `AGENTS.md` and
-`04_tasks.yaml` describe scope and acceptance.
+The current implementation supports read-only Fetch (TASK-01). The
+[requirements](docs/requirements/README.md) describe the full product scope,
+task dependencies and acceptance criteria.
 
 ## Start locally
 
@@ -104,7 +104,8 @@ a separate acceptance gate; local success does not close AC-Q-05.
 ### Full requirements-pack validation
 
 The strict structural validator needs the **original** historical ZIP at
-`reference/Adrobot_requirements_review_v0.2.zip` (hash in `00_manifest.yaml`):
+`.ai-work/reference/Adrobot_requirements_review_v0.2.zip` (hash in
+[`docs/requirements/00_manifest.yaml`](docs/requirements/00_manifest.yaml)):
 
 ```bash
 uv run --locked python checks/validate_pack.py
@@ -131,6 +132,11 @@ pack proves document provenance and references, not application acceptance.
   browser drafts are accepted limits of that future editor contract.
 - Bind to `127.0.0.1`. Public-user authentication is not implemented.
 
-Current verification results and remaining work are recorded in
-`docs/IMPLEMENTATION_STATUS.md`. TASK-01 and the complete product remain open
-until their actual CI/live acceptance is met.
+## Project documentation
+
+- [Requirements](docs/requirements/README.md) — the active specification, rules,
+  acceptance criteria and task plan.
+- [Keitaro API notes](docs/keitaro-api-notes.md) — observed API behavior and
+  open integration questions.
+- [Development instructions](AGENTS.md) — local development and independent review.
+  Local task status and verification reports live in `.ai-work/` when installed.

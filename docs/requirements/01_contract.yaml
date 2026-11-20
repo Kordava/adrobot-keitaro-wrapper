@@ -65,7 +65,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: SCP-02
   class: REQ
   statement: 'Реализовать небольшое веб-приложение на FastAPI с SQLAlchemy: создатель кампаний и редактор существующих
@@ -87,7 +87,7 @@ rules:
   - AC-E-01
   - AC-Q-09
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: SCP-03
   class: DESIGN
   statement: В базовый объём не входят создание/удаление глобальных Offer, лендинги и партнёрские сети, Meta/Facebook
@@ -102,7 +102,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: SCP-04
   class: REQ
   statement: Сдать ссылку на GitHub-репозиторий, доступный проверяющим, и README с понятными инструкциями запуска
@@ -118,7 +118,7 @@ rules:
   acceptance_refs:
   - AC-Q-01
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: SCP-05
   class: OPEN_GATE
   statement: Сохранить рабочий пятидневный план; точное начало срока и требуемые права проверяющих на GitHub остаются
@@ -133,7 +133,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: investigation_or_organizational_dependency
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-01
   class: REQ
   statement: Форма создания принимает обязательные непустое Name, Geo-код страны и Offer ID существующего оффера
@@ -150,7 +150,7 @@ rules:
   - AC-C-01
   - AC-C-03
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-02
   class: DESIGN
   statement: Принимать одиночный ISO country code или несколько через запятую, нормализовать пробелы и регистр,
@@ -166,7 +166,7 @@ rules:
   acceptance_refs:
   - AC-C-07
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-03
   class: DESIGN
   statement: Выбор оффера при создании поддерживает поиск существующих офферов по ID/названию с автодополнением
@@ -180,7 +180,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-04
   class: REQ
   statement: Домен, группа и источник назначаются через Keitaro API именно созданной кампании.
@@ -197,7 +197,7 @@ rules:
   acceptance_refs:
   - AC-C-01
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-05
   class: DESIGN
   statement: Домен, группа и источник берутся из валидируемых конфигурируемых defaults; полноценные селекты необязательны.
@@ -215,7 +215,7 @@ rules:
   acceptance_refs:
   - AC-C-01
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-06
   class: REQ
   statement: 'Созданная кампания содержит ровно два потока: первый по приоритету принимает указанные GEO и направляет
@@ -232,7 +232,7 @@ rules:
   acceptance_refs:
   - AC-C-02
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-07
   class: DEMO-REQ
   statement: 'Для создаваемой схемы настроить позиционный порядок обработки потоков: GEO-поток выше офферного.'
@@ -247,7 +247,7 @@ rules:
   acceptance_refs:
   - AC-C-02
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-08
   class: DESIGN
   statement: После создания выбранный оффер присутствует в fallback-потоке в единственном экземпляре.
@@ -261,7 +261,7 @@ rules:
   acceptance_refs:
   - AC-C-02
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: CRE-09
   class: ENG
   statement: До любых мутаций сервер проверяет имя, GEO, существование оффера и доступность defaults; ошибки входа
@@ -285,7 +285,7 @@ rules:
   - AC-C-03
   - AC-C-06
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: DATA-01
   class: DESIGN
   statement: 'Keitaro является источником истины о текущем удалённом составе потоков и сохранённых долях. Локальная
@@ -305,7 +305,7 @@ rules:
   - AC-E-09
   - AC-Q-02
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: DATA-02
   class: DESIGN
   statement: 'Реализовать known_offer_bindings: обязательные campaign_id, stream_id, offer_id с составной уникальностью;
@@ -325,7 +325,7 @@ rules:
   acceptance_refs:
   - AC-Q-02
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: DATA-03
   class: DESIGN
   statement: Синхронизировать архив только после полного валидного чтения потоков/привязок кампании со всеми страницами
@@ -347,7 +347,7 @@ rules:
   - AC-E-09
   - AC-E-15
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: DATA-04
   class: DESIGN
   statement: До Push добавления/удаления/Pin остаются в браузерном draft и не загрязняют архив; потеря неопубликованного
@@ -368,7 +368,7 @@ rules:
   - AC-E-18
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: DATA-05
   class: DESIGN
   statement: Fetch возвращает base_pinned_shares для всего известного набора, включая архив, и base_pin_revision
@@ -389,7 +389,7 @@ rules:
   related_rules:
   - INT-08
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: DATA-06
   class: ENG
   statement: 'SQLAlchemy Session принадлежит запросу/use-case и не разделяется конкурентно; общей глобальной Session
@@ -405,7 +405,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: DATA-07
   class: ENG
   statement: Использовать SQLAlchemy 2.x и Alembic. alembic upgrade head создаёт согласованную схему на пустой БД
@@ -423,7 +423,7 @@ rules:
   - AC-Q-01
   - AC-Q-02
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-01
   class: OPEN_GATE
   statement: До фиксации затрагиваемого адаптера проверить фактический Keitaro и записать в docs/keitaro-api-notes.md
@@ -458,7 +458,7 @@ rules:
   - OPEN-06
   acceptance_refs: []
   requirement_status: investigation_or_organizational_dependency
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-02
   class: ENG
   statement: Keitaro adapter использует один конфигурируемый httpx.AsyncClient на lifespan с переиспользованием
@@ -475,7 +475,7 @@ rules:
   acceptance_refs:
   - AC-Q-06
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-03
   class: ENG
   statement: 'Типизированно проверять важнейшие upstream-поля: отсутствующее обязательное поле или несовместимый
@@ -497,7 +497,7 @@ rules:
   - AC-E-15
   - AC-Q-06
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-04
   class: ENG
   statement: Результат remote-операции создания или публикации подтверждается readback сохранённых ID/значений;
@@ -518,7 +518,7 @@ rules:
   - AC-E-12
   - AC-E-18
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-05
   class: ENG
   statement: При частичном создании вернуть PARTIAL, известный campaign_id и последний подтверждённый этап; не удалять
@@ -538,7 +538,7 @@ rules:
   - AC-C-05
   - AC-Q-07
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-06
   class: ENG
   statement: Автоповторы допускаются только для безопасных чтений с небольшим ограничением; автоматический повтор
@@ -555,7 +555,7 @@ rules:
   acceptance_refs:
   - AC-Q-07
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-07
   class: ENG
   statement: При обновлении менять только офферы и их доли целевого потока. Сохранить action, filters, redirects,
@@ -572,7 +572,7 @@ rules:
   - AC-E-16
   - AC-Q-10
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-08
   class: DESIGN
   statement: Перед Push перечитать удалённую конфигурацию и локальные Pin и сверить base_revision и base_pin_revision.
@@ -591,7 +591,7 @@ rules:
   acceptance_refs:
   - AC-E-17
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: INT-09
   class: ENG
   statement: Начинать диагностику Keitaro с read-only запросов. Write smoke выполнять явной отдельной командой только
@@ -611,7 +611,7 @@ rules:
   - AC-Q-05
   - AC-Q-09
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-01
   class: ENG
   statement: 'Сохранить компактный модульный монолит: UI хранит/показывает draft и обращается только к FastAPI;
@@ -631,7 +631,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-02
   class: ENG
   statement: Зафиксировать поддерживаемую версию Python, ориентир 3.12, использовать pyproject.toml и воспроизводимые
@@ -646,7 +646,7 @@ rules:
   acceptance_refs:
   - AC-Q-01
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-03
   class: ENG
   statement: Использовать mypy в CI. Типизировать публичные функции, сервисы, границы данных и важные DTO; не применять
@@ -660,7 +660,7 @@ rules:
   acceptance_refs:
   - AC-Q-04
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-04
   class: ENG
   statement: 'Писать содержательные docstrings у публичных классов/сервисов, функций распределения, Keitaro API-методов
@@ -675,7 +675,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-05
   class: ENG
   statement: Единые style gates — ruff check . и ruff format --check .; не добавлять второй formatter Black или
@@ -689,7 +689,7 @@ rules:
   acceptance_refs:
   - AC-Q-04
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-06
   class: ENG
   statement: 'Настроить версионированные pre-commit hooks: Ruff lint/format, YAML/TOML, whitespace/EOF, conflict
@@ -704,7 +704,7 @@ rules:
   acceptance_refs:
   - AC-Q-04
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-07
   class: ENG
   statement: 'Использовать pytest для существенных успешных и отрицательных сценариев: unit, contract, HTTP/API
@@ -721,7 +721,7 @@ rules:
   - AC-Q-03
   - AC-Q-06
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-08
   class: ENG
   statement: GitHub Actions на push/PR запускает lint, format, mypy, unit/contract/API tests, миграции SQLite с
@@ -736,7 +736,7 @@ rules:
   acceptance_refs:
   - AC-Q-05
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-09
   class: ENG
   statement: Использовать читаемые имена и небольшие функции; не оставлять TODO с невыполненной обязательной логикой.
@@ -750,7 +750,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-10
   class: ENG
   statement: API-ключ находится только в backend settings. .env игнорируется Git, .env.example содержит плейсхолдеры.
@@ -771,7 +771,7 @@ rules:
   - AC-Q-05
   - AC-Q-08
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-11
   class: ENG
   statement: Логи идут в stdout через стандартный Python logging со структурированными полями либо лёгким JSON-formatter.
@@ -788,7 +788,7 @@ rules:
   acceptance_refs:
   - AC-Q-08
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-12
   class: ENG
   statement: GET /health проверяет работоспособность процесса, не вызывает Keitaro и не выполняет запись.
@@ -799,7 +799,7 @@ rules:
   api_gates: []
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-13
   class: ENG
   statement: README описывает две функции, Python/version requirements, установку, env, alembic upgrade head, запуск,
@@ -818,7 +818,7 @@ rules:
   acceptance_refs:
   - AC-Q-01
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ENG-15
   class: ENG
   statement: 'Считать работу готовой только при одновременном выполнении всего DoD: подтверждённые Create и редактор,
@@ -843,7 +843,7 @@ rules:
   - OPEN-06
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-01
   class: DEMO-REQ
   statement: Fetch streams from KT читает и отображает потоки выбранной существующей кампании. Для офферных потоков
@@ -864,7 +864,7 @@ rules:
   acceptance_refs:
   - AC-E-01
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-02
   class: DEMO-REQ
   statement: Пользователь находит и выбирает существующий оффер Keitaro для определённого потока. Add добавляет
@@ -883,7 +883,7 @@ rules:
   - AC-E-02
   - AC-E-04
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-03
   class: DEMO-REQ
   statement: Remove исключает привязку из активного черновика. Строка остаётся приглушённой как Removed с 0% и Bring
@@ -903,7 +903,7 @@ rules:
   - AC-E-05
   - AC-E-07
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-04
   class: DEMO-REQ
   statement: Bring Back доступен для удалённой строки до публикации и для архивной строки после опубликованного
@@ -928,7 +928,7 @@ rules:
   related_rules:
   - INT-04
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-05
   class: DESIGN
   statement: Повторное добавление одного offer_id в тот же поток запрещено в принятой модели; другая модель bindings
@@ -948,7 +948,7 @@ rules:
   - OPEN-04
   acceptance_refs: []
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-06
   class: DEMO-REQ
   statement: После внешнего удаления ранее известных привязок из Keitaro успешный Fetch оставляет присутствующие
@@ -970,7 +970,7 @@ rules:
   - AC-E-11
   - AC-E-12
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-07
   class: ENG
   statement: Синхронизация архива допустима только после успешного полного чтения нужных потоков и всех страниц
@@ -988,7 +988,7 @@ rules:
   - AC-E-15
   - AC-Q-06
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-08
   class: DESIGN
   statement: Успешный Fetch и подтверждённый Push фиксируют базовый упорядоченный список активных привязок, фактически
@@ -1007,7 +1007,7 @@ rules:
   acceptance_refs:
   - AC-E-04
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-09
   class: DEMO-REQ
   statement: Fetch/readback показывает фактически считанные доли без перераспределения и нормализации. Полученные
@@ -1024,7 +1024,7 @@ rules:
   - AC-E-10
   - AC-E-19
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-10
   class: DESIGN
   statement: Принятое Add, Remove или Bring Back, реально меняющее активный состав, устанавливает RECALCULATED и
@@ -1045,7 +1045,7 @@ rules:
   - AC-E-14
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-11
   class: DEMO-REQ
   statement: Pin закрепляет текущую отображаемую целочисленную долю конкретной привязки в момент принятого действия.
@@ -1064,7 +1064,7 @@ rules:
   - AC-E-11
   - AC-E-12
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-12
   class: DESIGN
   statement: Pin/Unpin в SNAPSHOT меняет только локальное намерение, не пересчитывая считанные доли; отличающиеся
@@ -1083,7 +1083,7 @@ rules:
   - AC-E-13
   - AC-E-19
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-13
   class: DESIGN
   statement: В RECALCULATED fixed равен сумме Pin активных привязок, free = 100 - fixed, n — числу активных незакреплённых.
@@ -1104,7 +1104,7 @@ rules:
   - AC-E-12
   - AC-E-13
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-14
   class: DESIGN
   statement: При n == 0 композиционное изменение допустимо только при fixed == 100. Fixed > 100, free < 0, n > 0
@@ -1121,7 +1121,7 @@ rules:
   acceptance_refs:
   - AC-E-14
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-15
   class: DESIGN
   statement: 'Полное совпадение итогового упорядоченного активного состава и всего набора Pin, включая архивные
@@ -1140,7 +1140,7 @@ rules:
   - AC-E-06
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-16
   class: DESIGN
   statement: 'Cancel локально восстанавливает последнюю подтверждённую базу: активный состав, считанные доли, архив,
@@ -1162,7 +1162,7 @@ rules:
   - AC-E-03
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-17
   class: DESIGN
   statement: Поля base_pinned_shares и pinned_shares представляют полное состояние закреплений, не patch. Карта
@@ -1179,7 +1179,7 @@ rules:
   acceptance_refs:
   - AC-E-19
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-18
   class: DESIGN
   statement: Pin хранится по привязке campaign/stream/offer и сохраняется у архивной строки, не резервируя долю
@@ -1199,7 +1199,7 @@ rules:
   acceptance_refs:
   - AC-E-19
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-19
   class: ENG
   statement: 'Preview и Push используют одну чистую, детерминированную, типизированную Python domain-функцию без
@@ -1219,7 +1219,7 @@ rules:
   - AC-E-13
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-20
   class: DESIGN
   statement: 'Preview stateless: не читает Keitaro на каждом нажатии и ничего не записывает в Keitaro или БД. Клиентская
@@ -1239,7 +1239,7 @@ rules:
   - AC-E-14
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-21
   class: DESIGN
   statement: 'UI сериализует Preview: до завершения запроса действия и Push для этого черновика заблокированы. UI
@@ -1256,7 +1256,7 @@ rules:
   - AC-E-04
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-22
   class: DESIGN
   statement: 'Push использует реальные повторно прочитанные базы и те же канонические active_offer_ids, полный pinned_shares
@@ -1275,7 +1275,7 @@ rules:
   - AC-E-13
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-23
   class: ENG
   statement: Если remote состав или доли должны измениться, Push применяет подготовленную конфигурацию, повторно
@@ -1304,7 +1304,7 @@ rules:
   - AC-E-12
   - AC-E-18
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-24
   class: DESIGN
   statement: Если изменились только Pin, а remote состав и доли совпадают с базой, Push сохраняет только локальные
@@ -1322,7 +1322,7 @@ rules:
   acceptance_refs:
   - AC-E-19
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-25
   class: DESIGN
   statement: View in KT открывает конкретную кампанию в админке. Неопубликованный черновик заметен через DIRTY или
@@ -1339,7 +1339,7 @@ rules:
   acceptance_refs:
   - AC-E-20
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 - id: ED-26
   class: ENG
   statement: Ошибки чтения и записи явно показываются, не подменяются пустой таблицей и HTTP 200. Ошибка содержит
@@ -1362,7 +1362,7 @@ rules:
   - AC-Q-07
   - AC-Q-08
   requirement_status: required_by_active_spec
-  source_file: source/Adrobot_TZ_v0.3.1.md
+  source_file: docs/requirements/Adrobot_TZ_v0.3.1.md
 internal_http_routes:
   upstream_keitaro_routes: false
   source_section: '8'

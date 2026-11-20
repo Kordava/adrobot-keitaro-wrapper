@@ -6,7 +6,7 @@ stage: implementation_preparation
 implementation_status: not_implemented_or_verified_by_this_pack
 active_spec:
   id: TZ-0.3.1
-  file: source/Adrobot_TZ_v0.3.1.md
+  file: docs/requirements/Adrobot_TZ_v0.3.1.md
   version: 0.3.1
   sha256: 60c961c44092e9fe9f66742f119d0acc8a125ccbbebae9d3fce3624138bb5aa5
   lines: 825
@@ -16,7 +16,7 @@ excluded_duplicate:
   sha256: ecf0d3c3c0d9cd6a463b73c2c9edf6705a8974c31b6e2564ab1ee8105262b4d3
   reason: Предыдущая копия с неуточнённой фразой DoD. В рабочий пакет как второй baseline не включена.
 historical_evidence:
-  file: reference/Adrobot_requirements_review_v0.2.zip
+  file: .ai-work/reference/Adrobot_requirements_review_v0.2.zip
   sha256: f78097e97b9ba89b2bad79e53d7c9b1468b21600eac3d7eb3c497ea9b74360dd
   use: Архив исходников и предыдущего ревью. При необходимости открыть первичные PDF/MP4/TXT и реестр требований.
     Старые v0.2/v0.3 и их открытые замечания не являются текущим контрактом.
@@ -28,7 +28,7 @@ historical_evidence:
   - V03-C05
   provenance_limit: Отсутствие отдельных HR/WEBP в архиве обозначено в §0.1. Их содержимое здесь отдельно не проверялось.
 authority:
-- Принятое ТЗ source/Adrobot_TZ_v0.3.1.md задаёт действующий внутренний контракт и собственную иерархию источников
+- Принятое ТЗ docs/requirements/Adrobot_TZ_v0.3.1.md задаёт действующий внутренний контракт и собственную иерархию источников
   в §0.2.
 - YAML-файлы — производное представление с ссылками; они не заменяют исходник при расхождении и не добавляют требований.
 - 01_contract хранит правила, 02_acceptance — дословные AC/DoD, 03_api_discovery — оставшиеся зависимости, 04_tasks
@@ -42,23 +42,23 @@ counts:
   organizational_questions: 1
   source_sections: 64
 files:
-- path: README.md
-  purpose: Навигация для человека и стартовый запрос.
+- path: docs/requirements/README.md
+  purpose: Навигация по требованиям, приёмке и проверке источников.
 - path: AGENTS.md
   purpose: Короткие рабочие инструкции для ИИ-исполнителя.
-- path: 00_manifest.yaml
+- path: docs/requirements/00_manifest.yaml
   purpose: Активный источник, hashes, роли файлов и индекс разделов.
-- path: 01_contract.yaml
+- path: docs/requirements/01_contract.yaml
   purpose: Извлечённые нормы и внутренние маршруты с provenance.
-- path: 02_acceptance.yaml
+- path: docs/requirements/02_acceptance.yaml
   purpose: 37 дословных AC, DoD и четыре примера уже принятой математики.
-- path: 03_api_discovery.yaml
+- path: docs/requirements/03_api_discovery.yaml
   purpose: OPEN-01…07 и моменты применения зависимостей.
-- path: 04_tasks.yaml
+- path: docs/requirements/04_tasks.yaml
   purpose: Пять задач принятого плана и связь с правилами/AC.
-- path: source/Adrobot_TZ_v0.3.1.md
+- path: docs/requirements/Adrobot_TZ_v0.3.1.md
   purpose: Неизменённое исправленное ТЗ.
-- path: reference/Adrobot_requirements_review_v0.2.zip
+- path: .ai-work/reference/Adrobot_requirements_review_v0.2.zip
   purpose: Историческое ревью и первичные материалы, загружаемые по необходимости.
 - path: checks/validate_pack.py
   purpose: Проверка hashes, точной транскрипции и ссылок.

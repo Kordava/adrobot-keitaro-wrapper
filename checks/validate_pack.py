@@ -11,6 +11,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+REQUIREMENTS = ROOT / "docs" / "requirements"
 
 
 def run():
@@ -21,7 +22,7 @@ def run():
             errors.append(message)
 
     def read(name):
-        return yaml.safe_load((ROOT / name).read_text(encoding="utf-8"))
+        return yaml.safe_load((REQUIREMENTS / name).read_text(encoding="utf-8"))
 
     def keyed(rows, key, label):
         result = {}
