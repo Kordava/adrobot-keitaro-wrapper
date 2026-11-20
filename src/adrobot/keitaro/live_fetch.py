@@ -4,7 +4,7 @@ Usage after configuring .env locally:
     python -m adrobot.keitaro.live_fetch NUMERIC_CAMPAIGN_ID
 
 No upstream credentials, campaign details, offer names or remote JSON are printed.
-The command uses the exact FastAPI route and Keitaro client used by the UI.
+The command uses the dedicated diagnostic FastAPI route and the same Keitaro client as the UI.
 """
 
 import argparse
@@ -42,7 +42,7 @@ async def fetch_through_app(
             follow_redirects=False,
             trust_env=False,
         ) as client:
-            response = await client.get(f"/api/campaigns/{campaign_id}/editor")
+            response = await client.get(f"/api/campaigns/{campaign_id}/remote-snapshot")
     if response.status_code != 200:
         try:
             error_code = response.json()["error"]["code"]
@@ -50,11 +50,16 @@ async def fetch_through_app(
             error_code = "unexpected_response"
         raise RuntimeError(f"Fetch failed: HTTP {response.status_code}, {error_code}")
     try:
-        snapshot = ReadonlySnapshot.model_validate(response.json())
+        raw = response.json()
+        # ReadonlySnapshot provides model defaults for application construction.
+        # The CLI must not accept a partial wire response as a remote-only read.
+        if not isinstance(raw, dict) or raw.get("mapping_status") != "remote_only":
+            raise ValueError("Missing remote-only marker")
+        if raw.get("read_only") is not True:
+            raise ValueError("Missing read-only marker")
+        snapshot = ReadonlySnapshot.model_validate(raw)
     except (ValueError, TypeError) as exc:
         raise RuntimeError("Fetch failed: response contract mismatch") from exc
-    if snapshot.mapping_status != "remote_only":
-        raise RuntimeError("Fetch failed: unexpected response mapping")
     return {
         "status": "ok",
         "campaign_id": campaign_id,

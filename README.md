@@ -54,12 +54,13 @@ The current page shows ordered streams and, for offer streams, binding ID,
 global offer ID, binding state and the *raw* upstream `share` integer. It does
 not normalize shares or claim they are traffic percentages for unequal mixes.
 Non-offer streams are displayed without exposing their redirects or filters.
-There is **no editor archive, Pin, Preview or Push** at this stage. Create is
-available only after the separate integration prerequisites below.
+There is **no editor archive, Pin or Push** at this stage. The stateless
+Preview API is available for internal DTOs (TASK-03 Stage A), but is not yet
+connected to the editor UI. Create remains gated by the integration prerequisites below.
 
 ### Live Fetch smoke (authorized test instance only)
 
-Exercise the same FastAPI GET route in-process without opening a public port:
+Exercise the dedicated read-only diagnostic GET in-process without opening a public port:
 
 ```bash
 uv run --locked python -m adrobot.keitaro.live_fetch 215477
@@ -86,9 +87,11 @@ For schema-only debugging (field names/types and counts, never values):
 uv run --locked python -m adrobot.keitaro.inspect 215477
 ```
 
-Upstream: `GET /admin_api/v1/campaigns/{id}/streams`. The internal route is
-`GET /api/campaigns/{id}/editor`, with `mapping_status=remote_only`. Successful
-Fetch is not a synchronized editor snapshot (TASK-03).
+Upstream: `GET /admin_api/v1/campaigns/{id}/streams`. The diagnostic route is
+`GET /api/campaigns/{id}/remote-snapshot`, with `mapping_status=remote_only`
+and `read_only=true`. It never accesses the local editor archive. Until Stage B1,
+the UI continues using `GET /api/campaigns/{id}/editor` with the same remote-only
+projection. Neither route currently supplies a synchronized editor snapshot.
 
 ### Create Campaign (TASK-02 — guarded until live verification)
 

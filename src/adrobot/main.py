@@ -71,7 +71,7 @@ def create_app(
             len(segments) == 5
             and segments[1:3] == ["api", "campaigns"]
             and segments[3]
-            and segments[4] == "editor"
+            and segments[4] in {"editor", "remote-snapshot"}
         ):
             response.headers["Cache-Control"] = "no-store"
         logger.info(

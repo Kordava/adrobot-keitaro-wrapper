@@ -45,13 +45,18 @@ def payload() -> list[dict[str, Any]]:
     ]
 
 
-def fetch(handler: Callable[[httpx.Request], httpx.Response], path: str = "501") -> httpx.Response:
+def fetch(
+    handler: Callable[[httpx.Request], httpx.Response],
+    path: str = "501",
+    *,
+    route: str = "editor",
+) -> httpx.Response:
     app = create_app(
         Settings(keitaro_url="https://tracker.example", keitaro_api_key=SECRET, _env_file=None),
         keitaro_transport=httpx.MockTransport(handler),
     )
     with TestClient(app) as client:
-        return client.get(f"/api/campaigns/{path}/editor")
+        return client.get(f"/api/campaigns/{path}/{route}")
 
 
 def events(capsys: pytest.CaptureFixture[str]) -> list[dict[str, Any]]:
@@ -415,3 +420,39 @@ def test_internal_model_name_does_not_replace_required_upstream_schema() -> None
     assert response.status_code == 200
     assert response.json()["streams"][1]["schema"] == "landings"
     assert response.json()["streams"][1]["kind"] == "offers"
+
+
+@pytest.mark.parametrize("route", ["editor", "remote-snapshot"])
+def test_diagnostic_and_editor_share_strict_remote_mapping(route: str) -> None:
+    response = fetch(lambda _: httpx.Response(200, json=payload()), route=route)
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-request-id"]
+    assert response.json()["mapping_status"] == "remote_only"
+    assert response.json()["read_only"] is True
+    assert response.json()["streams"][1]["offers"] == [
+        {"binding_id": 81, "offer_id": 90, "state": "disabled", "share": 35},
+        {"binding_id": 82, "offer_id": 90, "state": "active", "share": 165},
+    ]
+    assert SECRET not in response.text
+
+
+@pytest.mark.parametrize("route", ["editor", "remote-snapshot"])
+@pytest.mark.parametrize(
+    "upstream",
+    [
+        lambda: httpx.Response(200, json={"streams": []}),
+        lambda: httpx.Response(200, json=payload(), headers={"Content-Range": "items 0-1/3"}),
+        lambda: httpx.Response(200, text="not JSON"),
+        lambda: httpx.Response(401, text=SECRET),
+    ],
+)
+def test_diagnostic_fail_closed_for_bad_or_partial_remote(
+    route: str, upstream: Callable[[], httpx.Response]
+) -> None:
+    response = fetch(lambda _: upstream(), route=route)
+    assert response.status_code == 502
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-request-id"] == response.json()["error"]["request_id"]
+    assert "streams" not in response.json()
+    assert SECRET not in response.text

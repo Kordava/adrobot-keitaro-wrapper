@@ -64,12 +64,24 @@ async def campaign_streams(
     campaign_id: Annotated[int, ApiPath(gt=0, le=JS_SAFE_INTEGER)],
     response: Response,
 ) -> ReadonlySnapshot:
-    """Return validated remote streams/bindings without an archive or writes.
+    """Provisional editor read; B1 will replace this with an archived snapshot."""
+    return await _read_remote_snapshot(request, campaign_id, response)
 
-    TASK-03 will extend this route into the complete editor snapshot, including
-    local binding history and pinned shares. The provisional response is tagged
-    `remote_only` so callers cannot mistake it for a publishable draft.
-    """
+
+@router.get("/api/campaigns/{campaign_id}/remote-snapshot", response_model=ReadonlySnapshot)
+async def remote_snapshot(
+    request: Request,
+    campaign_id: Annotated[int, ApiPath(gt=0, le=JS_SAFE_INTEGER)],
+    response: Response,
+) -> ReadonlySnapshot:
+    """Permanent diagnostic read with no local archive or Keitaro writes."""
+    return await _read_remote_snapshot(request, campaign_id, response)
+
+
+async def _read_remote_snapshot(
+    request: Request, campaign_id: int, response: Response
+) -> ReadonlySnapshot:
+    """Share the strict remote-only projection while the editor uses it in B0."""
     response.headers["Cache-Control"] = "no-store"
     started = perf_counter()
     context = {

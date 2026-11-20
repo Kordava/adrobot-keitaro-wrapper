@@ -109,10 +109,13 @@ def test_existing_readonly_fetch_is_unaffected_and_safe() -> None:
     ]
     with TestClient(fake_app(fake, write=False, mapping=False)) as client:
         response = client.get("/api/campaigns/501/editor")
-    assert response.status_code == 200
+        diagnostic = client.get("/api/campaigns/501/remote-snapshot")
+    assert response.status_code == diagnostic.status_code == 200
+    assert response.json() == diagnostic.json()
     assert response.json()["mapping_status"] == "remote_only"
     assert response.json()["streams"][0]["offers"][0]["share"] == 100
-    assert "PRIVATE" not in response.text
+    assert "PRIVATE" not in response.text + diagnostic.text
+    assert fake.posts == []
 
 
 def test_create_result_never_contains_secret_or_upstream_redirect() -> None:

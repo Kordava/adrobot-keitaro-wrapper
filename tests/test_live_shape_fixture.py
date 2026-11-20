@@ -1,13 +1,15 @@
 """Offline regression on observed Keitaro field shapes; data is synthetic."""
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from adrobot.config import Settings
 from adrobot.main import create_app
 
 
-def test_live_stream_schema_survives_read_mapping_without_share_math() -> None:
+@pytest.mark.parametrize("route", ["editor", "remote-snapshot"])
+def test_live_stream_schema_survives_read_mapping_without_share_math(route: str) -> None:
     payload = [
         {
             "id": 2001,
@@ -60,7 +62,7 @@ def test_live_stream_schema_survives_read_mapping_without_share_math() -> None:
         keitaro_transport=httpx.MockTransport(handler),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get(f"/api/campaigns/501/{route}")
     assert response.status_code == 200
     streams = response.json()["streams"]
     assert streams[0]["kind"] == "non_offer"
