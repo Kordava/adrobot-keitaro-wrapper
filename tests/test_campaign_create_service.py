@@ -164,10 +164,10 @@ def test_incomplete_streams_readback_never_signals_success() -> None:
 
 
 def test_preflight_rejects_bad_offer_and_defaults_without_post() -> None:
-    for mode in ("invalid_default", "offer_disabled", "offer_missing"):
+    for mode in ("missing_group", "offer_disabled", "offer_missing"):
         fake = FakeCreateKeitaro()
-        if mode == "invalid_default":
-            fake.invalid_default = True
+        if mode == "missing_group":
+            fake.missing_group = True
         elif mode == "offer_disabled":
             fake.offer_state = "disabled"
         else:

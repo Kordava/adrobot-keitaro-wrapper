@@ -29,6 +29,37 @@ To repeat the read-only check, configure the backend locally and run
 without redirect/filter details. Keep credentials and raw upstream responses out
 of reports and logs.
 
+## 2026-11-20 — Create campaign-group preflight (GET-only)
+
+On `https://tlgk.host`, discovery at **12:54–12:55 UTC** observed
+`GET /admin_api/v1/campaign_groups` returning HTTP 404. The correct catalog is
+`GET /admin_api/v1/groups?type=campaigns`: HTTP 200, an array of 36 groups with
+`id`, `name`, `position` and `type=campaigns`; none has a `state` field.
+Requiring the shared domain/source `state` model therefore rejects real groups
+even after correcting the endpoint.
+
+At **13:10:34 UTC (16:10:34 Moscow)** the corrected application's
+`KeitaroClient.list_campaign_groups()` successfully read all 36 groups. A request
+guard allowed only that exact GET URL; TLS verification was enabled and redirects
+were disabled. Parsed ID/name/type values matched the response in memory.
+Response SHA-256:
+`2861b2d88ecced64d8e3d671c205dd1fb7bebb00f25d4418c5fc5ba0b2fe5a94`.
+No raw response, names or credentials were saved in this document.
+
+The adapter validates positive JavaScript-safe integer IDs, nonempty names and
+`type=campaigns`, rejects duplicate IDs, invalid JSON/entries, lists over 20000
+items and partial-response markers. Extra upstream fields are accepted. The
+service checks that the configured group ID exists without inventing an activity
+state. Domains and traffic sources retain their required `state` and `active`
+checks. These validation limits are application rules, not claims about all
+possible Keitaro pagination modes.
+
+This verifies the group-read correction only (CRE-05/09, INT-01/03, OPEN-01/05).
+Defaults and write/mapping flags were not changed; no Keitaro write was made.
+The intended test resources, precise instance version/schema and remaining
+Create payload assumptions still require confirmation before separately
+authorized live smoke. Offline Create tests do not close live AC-C-01/02/06.
+
 ## 2026-11-20 — live application and browser verification
 
 Observed at **09:20–09:24 UTC (12:20–12:24 Moscow)**, using Python 3.12.3 and

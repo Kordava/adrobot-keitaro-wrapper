@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from adrobot.keitaro.create_models import (
     ActiveOffer,
+    CampaignGroup,
     CampaignReadback,
     CreatedEntity,
     ReferenceItem,
@@ -151,9 +152,22 @@ class KeitaroClient:
             raise KeitaroContractError("Remote offer listing has repeated identifiers")
         return offers
 
+    async def list_campaign_groups(self) -> list[CampaignGroup]:
+        """Read the complete campaign-group catalog using its own wire contract."""
+        data = await self._get_create_json("/admin_api/v1/groups?type=campaigns")
+        if not isinstance(data, list) or len(data) > 20000:
+            raise KeitaroContractError("Remote campaign group listing is invalid")
+        try:
+            groups = [CampaignGroup.model_validate(item) for item in data]
+        except ValidationError as exc:
+            raise KeitaroContractError("Remote campaign group listing has invalid entries") from exc
+        if len({item.id for item in groups}) != len(groups):
+            raise KeitaroContractError("Remote campaign group listing has duplicate IDs")
+        return groups
+
     async def list_create_references(self, resource: str) -> list[ReferenceItem]:
         """Read one configured default category, never accept an arbitrary path."""
-        if resource not in ("domains", "campaign_groups", "traffic_sources"):
+        if resource not in ("domains", "traffic_sources"):
             raise ValueError("Unsupported Create default category")
         data = await self._get_create_json(f"/admin_api/v1/{resource}")
         if not isinstance(data, list) or len(data) > 20000:

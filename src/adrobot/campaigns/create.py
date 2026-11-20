@@ -125,7 +125,6 @@ class CampaignCreator:
         assert config.create_offer_action_type is not None
         pairs = (
             ("domains", config.create_domain_id),
-            ("campaign_groups", config.create_group_id),
             ("traffic_sources", config.create_traffic_source_id),
         )
         selected: list[ReferenceItem] = []
@@ -135,6 +134,10 @@ class CampaignCreator:
             if len(matching) != 1 or matching[0].state != "active":
                 raise CreateUnavailable("Configured Create default is unavailable")
             selected.append(matching[0])
+        groups = await self.api.list_campaign_groups()
+        group = next((item for item in groups if item.id == config.create_group_id), None)
+        if group is None:
+            raise CreateUnavailable("Configured Create default is unavailable")
         filters, actions = await self.api.get_create_capabilities()
         if not isinstance(filters, list) or not isinstance(actions, list):
             raise KeitaroContractError("Remote Create capability catalog has an invalid shape")
@@ -160,8 +163,8 @@ class CampaignCreator:
             traffic_source_id=config.create_traffic_source_id,
             offer_action_type=config.create_offer_action_type,
             domain_name=selected[0].name,
-            group_name=selected[1].name,
-            traffic_source_name=selected[2].name,
+            group_name=group.name,
+            traffic_source_name=selected[1].name,
         )
 
     async def reference_data(self) -> ReferenceData:

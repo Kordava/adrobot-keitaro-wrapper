@@ -3,6 +3,8 @@
 Extra upstream data stays in the backend and is never returned by API handlers.
 """
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from adrobot.keitaro.read_models import JS_SAFE_INTEGER
@@ -39,6 +41,16 @@ class ActiveOffer(BaseModel):
     id: int = Field(gt=0, le=JS_SAFE_INTEGER)
     name: str = Field(min_length=1)
     state: str
+
+
+class CampaignGroup(BaseModel):
+    """Campaign group catalog entry; groups have no required activity state."""
+
+    model_config = ConfigDict(extra="allow", strict=True)
+
+    id: int = Field(gt=0, le=JS_SAFE_INTEGER)
+    name: str = Field(min_length=1)
+    type: Literal["campaigns"]
 
 
 class ReferenceItem(BaseModel):

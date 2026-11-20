@@ -25,7 +25,8 @@ class FakeCreateKeitaro:
         self.readback_status: int | None = None
         self.incomplete_streams = False
         self.offer_state = "active"
-        self.invalid_default = False
+        self.missing_group = False
+        self.inactive_reference: str | None = None
         self.fail_offer_status: int | None = None
         self.ignore_campaign_type = False
 
@@ -111,9 +112,17 @@ class FakeCreateKeitaro:
                     {"id": 44, "name": "Inactive Offer", "state": "disabled"},
                 ],
             )
+        if path == "/admin_api/v1/groups" and list(request.url.params.multi_items()) == [
+            ("type", "campaigns")
+        ]:
+            return httpx.Response(
+                200,
+                json=[]
+                if self.missing_group
+                else [{"id": 20, "name": "Test Group", "type": "campaigns", "position": 0}],
+            )
         resources = {
             "/admin_api/v1/domains": (10, "Test Domain"),
-            "/admin_api/v1/campaign_groups": (20, "Test Group"),
             "/admin_api/v1/traffic_sources": (30, "Test Source"),
         }
         if path in resources:
@@ -124,7 +133,7 @@ class FakeCreateKeitaro:
                     {
                         "id": id_,
                         "name": name,
-                        "state": "disabled" if self.invalid_default and id_ == 20 else "active",
+                        "state": "disabled" if path == self.inactive_reference else "active",
                         "extra_secret": "PRIVATE-DEFAULT",
                     }
                 ],
