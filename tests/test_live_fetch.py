@@ -64,14 +64,18 @@ def test_readonly_smoke_exercises_route_and_counts() -> None:
     assert "PRIVATE-DATA" not in str(result)
 
 
-def test_readonly_smoke_reports_safe_upstream_failure() -> None:
-    with pytest.raises(RuntimeError, match=r"HTTP 502, keitaro_unauthorized") as exc:
+@pytest.mark.parametrize(
+    ("status", "code"),
+    [(401, "keitaro_unauthorized"), (422, "keitaro_upstream_validation_error")],
+)
+def test_readonly_smoke_reports_safe_upstream_failure(status: int, code: str) -> None:
+    with pytest.raises(RuntimeError, match=f"HTTP 502, {code}") as exc:
         asyncio.run(
             fetch_through_app(
                 20,
                 settings(),
                 keitaro_transport=httpx.MockTransport(
-                    lambda _: httpx.Response(401, text="PRIVATE-AUTH-INFO")
+                    lambda _: httpx.Response(status, text="PRIVATE-AUTH-INFO")
                 ),
             )
         )

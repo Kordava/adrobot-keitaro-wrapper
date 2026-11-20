@@ -14,10 +14,12 @@ from collections.abc import Mapping
 from typing import Any
 
 import httpx
+from pydantic import ValidationError
 
 from adrobot.config import get_settings
 from adrobot.keitaro.client import KeitaroClient
 from adrobot.keitaro.exceptions import KeitaroError
+from adrobot.keitaro.read_models import validate_campaign_id
 
 
 def describe_type(value: object) -> str:
@@ -65,6 +67,7 @@ def describe_streams(streams: list[dict[str, Any]]) -> dict[str, object]:
 
 async def inspect(campaign_id: int) -> dict[str, object]:
     """Read one campaign through the same API client used by the application."""
+    validate_campaign_id(campaign_id)
     settings = get_settings()
     if not settings.keitaro_configured:
         raise RuntimeError("Keitaro connection is not configured")
@@ -87,13 +90,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("campaign_id", type=int, help="positive test campaign ID")
     args = parser.parse_args()
-    if args.campaign_id <= 0:
-        parser.error("campaign_id must be positive")
+    try:
+        validate_campaign_id(args.campaign_id)
+    except ValueError:
+        parser.error("campaign_id must be a positive safe integer")
     try:
         result = asyncio.run(inspect(args.campaign_id))
     except KeitaroError as exc:
         print(f"Keitaro inspection failed: {exc.code}", file=sys.stderr)
         return 1
+    except ValidationError:
+        print("Keitaro inspection failed: invalid configuration", file=sys.stderr)
+        return 2
     except RuntimeError:
         print("Keitaro inspection failed: missing configuration", file=sys.stderr)
         return 2

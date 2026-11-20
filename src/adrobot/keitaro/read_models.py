@@ -11,28 +11,36 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from adrobot.keitaro.exceptions import KeitaroContractError
 
+JS_SAFE_INTEGER = 9007199254740991
+
+
+def validate_campaign_id(campaign_id: int) -> None:
+    """Reject IDs that cannot survive the browser JSON number boundary exactly."""
+    if type(campaign_id) is not int or not 1 <= campaign_id <= JS_SAFE_INTEGER:
+        raise ValueError("campaign_id must be a positive safe integer")
+
 
 class OfferBinding(BaseModel):
     """One Keitaro stream-offer binding, distinct from the global offer."""
 
     model_config = ConfigDict(extra="allow", strict=True)
 
-    id: int = Field(gt=0)
-    stream_id: int = Field(gt=0)
-    offer_id: int = Field(gt=0)
+    id: int = Field(gt=0, le=JS_SAFE_INTEGER)
+    stream_id: int = Field(gt=0, le=JS_SAFE_INTEGER)
+    offer_id: int = Field(gt=0, le=JS_SAFE_INTEGER)
     state: str = Field(min_length=1)
-    share: int = Field(ge=0)
+    share: int = Field(ge=0, le=JS_SAFE_INTEGER)
 
 
 class CampaignStream(BaseModel):
     """Critical fields required for a complete, safely classified stream read."""
 
-    model_config = ConfigDict(extra="allow", strict=True, populate_by_name=True)
+    model_config = ConfigDict(extra="allow", strict=True)
 
-    id: int = Field(gt=0)
-    campaign_id: int = Field(gt=0)
+    id: int = Field(gt=0, le=JS_SAFE_INTEGER)
+    campaign_id: int = Field(gt=0, le=JS_SAFE_INTEGER)
     name: str = Field(min_length=1)
-    position: int
+    position: int = Field(ge=-JS_SAFE_INTEGER, le=JS_SAFE_INTEGER)
     state: str = Field(min_length=1)
     schema_name: str = Field(alias="schema", min_length=1)
     filters: list[dict[str, Any]]
@@ -78,23 +86,41 @@ def parse_streams(campaign_id: int, data: object) -> list[CampaignStream]:
     or cross-campaign references are integration errors, never empty results.
     No unique constraint is assumed for the global `offer_id` (OPEN-03).
     """
+
+    def invalid(message: str, stream_id: int | None = None) -> KeitaroContractError:
+        return KeitaroContractError(
+            message,
+            failure_kind="schema",
+            failure_stage="validate_streams",
+            stream_id=stream_id,
+        )
+
     if not isinstance(data, list):
-        raise KeitaroContractError("Keitaro stream list has unexpected shape")
+        raise invalid("Keitaro stream list has unexpected shape")
 
     streams: list[CampaignStream] = []
     stream_ids: set[int] = set()
     binding_ids: set[int] = set()
     for raw in data:
+        raw_id = raw.get("id") if isinstance(raw, dict) else None
+        safe_id = raw_id if type(raw_id) is int and 1 <= raw_id <= JS_SAFE_INTEGER else None
         try:
             stream = CampaignStream.model_validate(raw)
         except ValidationError as exc:
-            raise KeitaroContractError("Keitaro stream record is incomplete") from exc
+            raise invalid("Keitaro stream record is incomplete", safe_id) from exc
         if stream.campaign_id != campaign_id or stream.id in stream_ids:
-            raise KeitaroContractError("Keitaro returned inconsistent stream identifiers")
+            raise invalid("Keitaro returned inconsistent stream identifiers", stream.id)
         stream_ids.add(stream.id)
+        if stream.schema_name != "landings" and stream.offers:
+            raise invalid("Keitaro stream schema contradicts bindings", stream.id)
+        for stream_filter in stream.filters:
+            if "stream_id" in stream_filter:
+                filter_id = stream_filter["stream_id"]
+                if type(filter_id) is not int or filter_id != stream.id:
+                    raise invalid("Keitaro returned inconsistent filter identifiers", stream.id)
         for offer in stream.offers:
             if offer.stream_id != stream.id or offer.id in binding_ids:
-                raise KeitaroContractError("Keitaro returned inconsistent binding identifiers")
+                raise invalid("Keitaro returned inconsistent binding identifiers", stream.id)
             binding_ids.add(offer.id)
         streams.append(stream)
     return streams
@@ -111,7 +137,7 @@ def build_readonly_snapshot(campaign_id: int, streams: list[CampaignStream]) -> 
                 position=stream.position,
                 state=stream.state,
                 schema_name=stream.schema_name,
-                kind="offers" if stream.schema_name == "landings" or stream.offers else "non_offer",
+                kind="offers" if stream.schema_name == "landings" else "non_offer",
                 offers=[
                     ReadonlyOffer(
                         binding_id=offer.id,

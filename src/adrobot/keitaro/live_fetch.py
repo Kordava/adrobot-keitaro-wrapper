@@ -13,10 +13,10 @@ import json
 import sys
 
 import httpx
+from pydantic import ValidationError
 
 from adrobot.config import Settings, get_settings
-from adrobot.keitaro.read_models import ReadonlySnapshot
-from adrobot.main import create_app
+from adrobot.keitaro.read_models import ReadonlySnapshot, validate_campaign_id
 
 
 async def fetch_through_app(
@@ -30,8 +30,10 @@ async def fetch_through_app(
     Fail closed on non-200 responses. Output contains only counters and route status;
     upstream bodies and authentication headers cannot reach the diagnostic output.
     """
-    if campaign_id <= 0:
-        raise ValueError("campaign_id must be positive")
+    validate_campaign_id(campaign_id)
+    # main constructs its public app eagerly; CLI settings must be validated first.
+    from adrobot.main import create_app
+
     app = create_app(settings, keitaro_transport=keitaro_transport)
     async with app.router.lifespan_context(app):
         async with httpx.AsyncClient(
@@ -67,10 +69,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("campaign_id", type=int, help="positive, numeric test campaign ID")
     args = parser.parse_args()
-    if args.campaign_id <= 0:
-        parser.error("campaign_id must be positive")
+    try:
+        validate_campaign_id(args.campaign_id)
+    except ValueError:
+        parser.error("campaign_id must be a positive safe integer")
     try:
         result = asyncio.run(fetch_through_app(args.campaign_id, get_settings()))
+    except ValidationError:
+        print("Fetch failed: invalid configuration", file=sys.stderr)
+        return 1
     except (RuntimeError, ValueError) as exc:
         # Only our own explicitly sanitized status/error strings may be emitted.
         print(str(exc) if isinstance(exc, RuntimeError) else "Invalid input", file=sys.stderr)

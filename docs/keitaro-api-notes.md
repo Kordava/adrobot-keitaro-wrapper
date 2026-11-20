@@ -16,7 +16,29 @@
 
 **OPEN-05/06:** default IDs and safe update fields/CAS remain unverified.
 
-Next read-only evidence: use a local `.env` with a valid API key, open `/editor`, fetch a known test campaign ID. Examine the response on the server with a narrowly controlled diagnostic tool; do not log raw tokens, cookies or credential headers. The provisional UI only displays IDs/names.
+Next read-only evidence: use a local `.env` with a valid API key, open `/editor`, fetch a known test campaign ID. Examine the response on the server with a narrowly controlled diagnostic tool; do not log raw tokens, cookies or credential headers. The UI displays stream metadata and binding IDs/state/raw share, without redirect/filter details.
+
+## 2026-11-20 — application validation update (offline)
+
+No new live observation: the backend key is not configured in this checkout.
+Historical API Explorer observations below remain historical evidence. Header
+authorization through this app, endpoint completeness/pagination and live browser
+Fetch remain unverified (OPEN-01); unequal-share semantics and empty `landings`
+remain OPEN-02/04.
+
+The client accepts only HTTP 200 with a JSON array. Content-Range or a Link with
+`rel=next` rejects the read as incomplete; these are defensive checks, not observed
+Keitaro pagination behavior. Other successful status codes, nonstandard JSON
+NaN/Infinity, malformed nested fields and unsafe integers reject the whole Fetch.
+Upstream 422 maps to `keitaro_upstream_validation_error`, separately from local 422.
+
+The read rule is explicit: `landings` is an offer stream, including an empty
+offers array; any other nonempty schema is non-offer only when bindings are empty.
+Bindings on `redirect` or an unknown schema are rejected. Present filter
+`stream_id` must match the parent; filters remain outside the public projection.
+IDs, raw shares and positions must fit the JavaScript exact integer range; no
+rounding, percentage conversion or share normalization is performed. These are
+application validation rules and do not establish additional live API facts.
 
 ## 2026-11-19 — target UI inspection (read-only)
 

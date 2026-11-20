@@ -65,6 +65,14 @@ def create_app(
         request.state.request_id = str(uuid4())
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
+        segments = request.url.path.split("/")
+        if (
+            len(segments) == 5
+            and segments[1:3] == ["api", "campaigns"]
+            and segments[3]
+            and segments[4] == "editor"
+        ):
+            response.headers["Cache-Control"] = "no-store"
         logger.info(
             "http request complete",
             extra={

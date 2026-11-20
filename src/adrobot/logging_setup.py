@@ -17,7 +17,20 @@ class JsonFormatter(logging.Formatter):
             "request_id": getattr(record, "request_id", ""),
             "message": record.getMessage(),
         }
-        for key in ("status_code", "duration_ms"):
+        for key in (
+            "status_code",
+            "duration_ms",
+            "campaign_id",
+            "stream_id",
+            "stream_ids",
+            "stream_count",
+            "offer_stream_count",
+            "binding_count",
+            "error_code",
+            "failure_kind",
+            "failure_stage",
+            "upstream_status",
+        ):
             if hasattr(record, key):
                 payload[key] = getattr(record, key)
         return json.dumps(payload, ensure_ascii=False)

@@ -67,6 +67,16 @@ The command returns nonzero for an unauthorized, unavailable, malformed or
 failed read. `215477` is a sample campaign ID from earlier authorized read-only
 discovery; choose a current campaign you have permission to read.
 
+Campaign IDs and returned numeric fields must fit JavaScript's exact integer
+range (IDs: 1–9007199254740991). Unsafe numbers are rejected rather than rounded.
+Fetch accepts only HTTP 200 with a complete JSON array; partial-response markers,
+invalid schemas and inconsistent IDs fail the whole read. Upstream 422 has its own
+`keitaro_upstream_validation_error` category, distinct from local input validation.
+Fetch responses use `Cache-Control: no-store`. Structured operation logs correlate
+start/completion/failure with request ID, known IDs and safe error categories.
+Both diagnostic commands report invalid backend configuration without exposing
+input values or a traceback.
+
 For schema-only debugging (field names/types and counts, never values):
 
 ```bash

@@ -12,6 +12,7 @@ async def keitaro_exception_handler(request: Request, exc: Exception) -> JSONRes
         raise exc
     return JSONResponse(
         status_code=exc.status_code,
+        headers={"Cache-Control": "no-store"},
         content={
             "error": {"code": exc.code, "message": str(exc), "request_id": request.state.request_id}
         },
