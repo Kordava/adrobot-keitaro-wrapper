@@ -21,6 +21,8 @@ from adrobot.campaigns.create import (
     InvalidOffer,
 )
 from adrobot.config import Settings
+from adrobot.editor.domain import PreviewProblem, calculate_preview
+from adrobot.editor.schemas import PreviewInput, PreviewResponse
 from adrobot.keitaro.client import KeitaroClient
 from adrobot.keitaro.exceptions import KeitaroError, KeitaroNotConfigured
 from adrobot.keitaro.read_models import JS_SAFE_INTEGER, ReadonlySnapshot, build_readonly_snapshot
@@ -248,4 +250,119 @@ async def create_campaign(request: Request) -> JSONResponse:
         content=created.model_dump(),
         status_code=201,
         headers={"Cache-Control": "no-store"},
+    )
+
+
+# TASK-03/A is an intentionally isolated arithmetic endpoint. In particular,
+# it does not resolve request.app.state.keitaro, database sessions or archives.
+_PREVIEW_MAX_BODY_BYTES = 128 * 1024
+
+
+def _unique_json_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Reject duplicate object members instead of silently losing Pin values."""
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON object key")
+        result[key] = value
+    return result
+
+
+async def _preview_json_object(request: Request) -> object:
+    """Preview-specific bounded JSON input; Create retains its 8192-byte limit."""
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type != "application/json":
+        raise ValueError("Expected application/json")
+    if (declared_length := request.headers.get("content-length")) is not None:
+        try:
+            declared_bytes = int(declared_length)
+        except ValueError as exc:
+            raise ValueError("Invalid Preview request size") from exc
+        if not 0 <= declared_bytes <= _PREVIEW_MAX_BODY_BYTES:
+            raise ValueError("Preview request is too large")
+    chunks: list[bytes] = []
+    length = 0
+    async for chunk in request.stream():
+        length += len(chunk)
+        if length > _PREVIEW_MAX_BODY_BYTES:
+            raise ValueError("Preview request is too large")
+        chunks.append(chunk)
+    try:
+        return json.loads(
+            b"".join(chunks),
+            parse_constant=_reject_json_constant,
+            object_pairs_hook=_unique_json_object,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
+        raise ValueError("Preview request must contain valid JSON") from exc
+
+
+def _preview_route_id(value: str) -> int:
+    """Validate path IDs here so FastAPI cannot bypass the Preview error envelope."""
+    if (
+        not value
+        or not value.isascii()
+        or not value.isdecimal()
+        or len(value) > 16
+        or value.startswith("0")
+    ):
+        raise ValueError("Invalid Preview path ID")
+    parsed = int(value)
+    if parsed > JS_SAFE_INTEGER:
+        raise ValueError("Invalid Preview path ID")
+    return parsed
+
+
+@router.post(
+    "/api/campaigns/{campaign_id}/streams/{stream_id}/preview",
+    response_model=PreviewResponse,
+)
+async def preview_stream(
+    request: Request,
+    campaign_id: str,
+    stream_id: str,
+    response: Response,
+) -> PreviewResponse | JSONResponse:
+    """Stateless Preview on caller-provided *logical* IDs, with no I/O.
+
+    The calculation cannot attest real Keitaro Offer identity, Pin read-mapping,
+    remote revisions or eligibility for publication. Those are future gates.
+    """
+    response.headers["Cache-Control"] = "no-store"
+    origin = request.headers.get("origin")
+    if origin is not None and origin != str(request.base_url).rstrip("/"):
+        return _safe_create_error(
+            request,
+            code="invalid_origin",
+            message="Cross-origin Preview is not allowed",
+            status_code=403,
+        )
+    try:
+        valid_campaign_id = _preview_route_id(campaign_id)
+        valid_stream_id = _preview_route_id(stream_id)
+    except ValueError:
+        return _safe_create_error(
+            request,
+            code="invalid_preview_input",
+            message="Preview path IDs are invalid",
+            status_code=422,
+        )
+    try:
+        raw = await _preview_json_object(request)
+        draft = PreviewInput.model_validate(raw)
+    except (ValueError, ValidationError, RecursionError):
+        return _safe_create_error(
+            request,
+            code="invalid_preview_input",
+            message="Preview draft is invalid",
+            status_code=422,
+        )
+    try:
+        result = calculate_preview(draft)
+    except PreviewProblem as exc:
+        return _safe_create_error(request, code=exc.code, message=str(exc), status_code=422)
+    return PreviewResponse(
+        campaign_id=valid_campaign_id,
+        stream_id=valid_stream_id,
+        **result.model_dump(),
     )
