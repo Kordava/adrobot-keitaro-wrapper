@@ -1,33 +1,65 @@
 # Keitaro Admin API mapping — work in progress
 
-**Status as of 2026-11-20:** live read-only Fetch of campaign `215477` on
-`https://tlgk.host` succeeded through the application's CLI, loopback backend and
-Chrome headless. The application's `Api-Key` header is now verified for this read.
-No write operations were performed. The dated sections below distinguish current
-observations from earlier offline rules and historical Explorer evidence.
+**Status as of 2026-11-20.** On `https://tlgk.host`, live Fetch of campaign
+`215477` succeeded through the CLI, loopback backend and Chrome headless. A
+separately authorized live Create smoke created campaign `216881` with one
+GEO and one offer. The [Create results](#2026-11-20--live-create-smoke) record
+the tested configuration and the limits of that run.
 
 | Item | Evidence | Confidence |
 |---|---|---|
-| Admin API uses `Api-Key` header | Public Admin API docs, <https://docs.keitaro.io/en/development/admin-api.html>; live app Fetch, 2026-11-20 | Verified for the authorized campaign read |
+| Admin API uses `Api-Key` header | Live application Fetch and Create, 2026-11-20 | Verified for the observed reads and Create |
 | `GET /admin_api/v1/campaigns/{id}/streams` | In-app API Explorer GET, 2026-11-19 | Observed on live test instance |
 | Stream response `offers[]` contains binding `id`, `offer_id`, `share` | In-app API Explorer GET, 2026-11-19 | Observed on live test instance; unequal-share semantics unverified |
 
-**OPEN-01:** app header authorization and live Fetch are verified for the observed
-campaign response. The response was a complete HTTP 200 JSON array with no
-Content-Range, Link `rel=next` or pagination/count headers. Other pagination modes,
-the precise instance version and all mutation contracts remain unverified.
+**OPEN-01.** Live Fetch and Create with `GEO=AU`, two ordered streams and one
+offer are verified on the instance below. Multi-GEO Create and other mutation
+contracts remain open.
 
-**OPEN-02:** the exact meaning of `share` and translation to UI percentages remain unverified; no normalization or publishing of shares is implemented.
+**OPEN-02.** Create persisted an integer `share=100` for one active binding.
+Unequal-share conversion, rounding and Push remain unverified.
 
 **OPEN-03/04:** binding `id` vs `offer_id` confirmed; duplicate-binding semantics and an empty offer-stream on the live instance remain unverified; archive schema is not created yet.
 
-**OPEN-05/06:** default IDs and safe update fields/CAS remain unverified.
+**OPEN-05.** The tested Create defaults are domain `1813`, campaign group `9799`
+and traffic source `836`. All three were validated through GET and confirmed
+on the created campaign.
+
+**OPEN-06.** Safe update fields and CAS behavior remain unverified.
 
 To repeat the read-only check, configure the backend locally and run
 `python -m adrobot.keitaro.live_fetch 215477`, then Fetch the same campaign in
 `/editor`. The UI displays stream metadata and binding IDs/state/raw share,
 without redirect/filter details. Keep credentials and raw upstream responses out
 of reports and logs.
+
+## 2026-11-20 — live Create smoke
+
+At **16:47–16:48 Moscow (13:47–13:48 UTC)**, Adrobot at Git `f27e219` ran one
+Create submission against `https://tlgk.host`. The instance's Status page
+reported Keitaro version `11.5.0` and Build `11.12.0-2026-10-26-07:53:03`.
+Swagger in the instance loaded the vendor's public
+[OpenAPI YAML](https://admin-api.docs.keitaro.io/openapi.yaml).
+
+| Check | Verified result |
+|---|---|
+| Preflight | Domain `1813` and source `836` were active. Campaign group `9799` was present in `GET /admin_api/v1/groups?type=campaigns`, whose entries have no `state` field. Offer `18813` was active. The capabilities included `country/accept` and `http`. |
+| AC-C-01 | One `POST /admin_api/v1/campaigns` created active campaign `216881` with positional rotation and the verified defaults. The request used string `group_id`; readback returned integer `9799`. A paginated GET found one campaign matching the generated name and alias. |
+| AC-C-02, first stream | Stream `1332703` was active, `regular` and `redirect` at position 1. Its `country/accept` filter contained `["AU"]`. Keitaro persisted the submitted `action_payload=https://google.com`. The public request schema omits this field. |
+| AC-C-02, fallback | Stream `1332704` was active, `default` and `landings` at position 2, with `action_type=http`. Its only binding (`2088967`) was active, pointed to offer `18813` and had integer `share=100`. The request omitted `landings` and the readback returned `[]`. |
+| AC-C-06 | Keitaro returned HTTP 200 for the campaign POST and both `POST /admin_api/v1/streams` calls. Adrobot returned HTTP 201 `SUCCESS` after reading the campaign and both streams back. The editor HTML selected the new campaign, and its Fetch endpoint returned the same ordered stream and binding data. This run exercised the application HTTP paths without a browser. |
+
+The smoke left campaign `216881` active. A future smoke needs separate write
+authorization, a new uniquely named test campaign and fresh GET validation of
+the selected resources. Keep the API key in backend settings. Use
+`ADROBOT_CREATE_OFFER_ACTION_TYPE=http` for the tested configuration. Enable
+`ADROBOT_CREATE_MAPPING_VERIFIED` and `ADROBOT_CREATE_WRITES_ENABLED` only for
+the isolated run. Submit once and verify the result by reading it back. On
+`PARTIAL` or `UNKNOWN`, stop writes and inspect the campaign by ID or alias
+before deciding on recovery. Retrying or deleting requires separate approval.
+
+Multi-GEO input (AC-C-07), traffic delivery, Push and unequal shares were
+outside this smoke.
 
 ## 2026-11-20 — Create campaign-group preflight (GET-only)
 
