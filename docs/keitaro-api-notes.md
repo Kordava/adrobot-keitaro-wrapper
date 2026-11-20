@@ -1,14 +1,21 @@
 # Keitaro Admin API mapping — work in progress
 
-**Status as of 2026-11-19:** read-only Admin API JSON inspected in the target instance via its authenticated API Explorer. The application's own `Api-Key` header has **not** been exercised against the live instance: the development sandbox cannot reach the host. No write operations performed.
+**Status as of 2026-11-20:** live read-only Fetch of campaign `215477` on
+`https://tlgk.host` succeeded through the application's CLI, loopback backend and
+Chrome headless. The application's `Api-Key` header is now verified for this read.
+No write operations were performed. The dated sections below distinguish current
+observations from earlier offline rules and historical Explorer evidence.
 
 | Item | Evidence | Confidence |
 |---|---|---|
-| Admin API uses `Api-Key` header | Keitaro public Admin API docs, <https://docs.keitaro.io/en/development/admin-api.html> | Documented, app live test pending |
+| Admin API uses `Api-Key` header | Public Admin API docs, <https://docs.keitaro.io/en/development/admin-api.html>; live app Fetch, 2026-11-20 | Verified for the authorized campaign read |
 | `GET /admin_api/v1/campaigns/{id}/streams` | In-app API Explorer GET, 2026-11-19 | Observed on live test instance |
 | Stream response `offers[]` contains binding `id`, `offer_id`, `share` | In-app API Explorer GET, 2026-11-19 | Observed on live test instance; unequal-share semantics unverified |
 
-**OPEN-01:** read endpoints and nested JSON shape observed; own app live auth, pagination and all mutation endpoints remain unverified.
+**OPEN-01:** app header authorization and live Fetch are verified for the observed
+campaign response. The response was a complete HTTP 200 JSON array with no
+Content-Range, Link `rel=next` or pagination/count headers. Other pagination modes,
+the precise instance version and all mutation contracts remain unverified.
 
 **OPEN-02:** the exact meaning of `share` and translation to UI percentages remain unverified; no normalization or publishing of shares is implemented.
 
@@ -16,15 +23,83 @@
 
 **OPEN-05/06:** default IDs and safe update fields/CAS remain unverified.
 
-Next read-only evidence: use a local `.env` with a valid API key, open `/editor`, fetch a known test campaign ID. Examine the response on the server with a narrowly controlled diagnostic tool; do not log raw tokens, cookies or credential headers. The UI displays stream metadata and binding IDs/state/raw share, without redirect/filter details.
+To repeat the read-only check, configure the backend locally and run
+`python -m adrobot.keitaro.live_fetch 215477`, then Fetch the same campaign in
+`/editor`. The UI displays stream metadata and binding IDs/state/raw share,
+without redirect/filter details. Keep credentials and raw upstream responses out
+of reports and logs.
+
+## 2026-11-20 — live application and browser verification
+
+Observed at **09:20–09:24 UTC (12:20–12:24 Moscow)**, using Python 3.12.3 and
+Chrome 158.0.8127.36. Verified source content matches Git
+`435120413db810cd3b9d663d672b4d5b23740ae1`; source/test hashes matched the
+offline-verified implementation. Only this
+notes file was updated after these runtime checks. The backend key came from
+local ignored settings and was sent only in the `Api-Key` header.
+
+- CLI `live_fetch 215477`: exit 0, HTTP 200, two streams, one offer stream and
+  one binding; correlated start/complete and HTTP completion logs.
+- Independent upstream GET compared in memory with the loopback route: exact
+  narrow projection matched, including order `(position,id)`, schema, binding
+  identity, state and raw share; `Cache-Control: no-store` was present.
+- Stream `1326672`: position 1, `schema=redirect`, no bindings. Stream `1326673`:
+  position 2, `schema=landings`, one binding. Binding `2080989` referred to global
+  offer `18813`, state `active`, raw share `100`.
+- HTTP 200 returned a JSON array with `application/json; charset=utf-8` and no
+  partial-response or pagination headers. This describes the observed response;
+  it does not establish pagination behavior for other endpoint modes or datasets.
+- Real Chrome headless loaded the production HTML/JS from the loopback backend,
+  submitted Fetch and displayed the same ordered streams and binding values.
+  Redirect/filter details and the backend key were absent from the public
+  projection; browser API requests contained no API credentials.
+- A browser-only offline failure retained the successful table, showed an error
+  and restored controls. Server operation counts confirmed that this failed
+  attempt did not reach Keitaro. No upstream error or mutation was induced.
+- The CLI and two loopback Fetch calls each logged one correlated start/complete
+  pair. The independent reference read made the fourth authorized upstream GET.
+  The configured key was absent from captured application logs and CLI output.
+
+This establishes live application compatibility for the observed read, not
+Create/Push/readback, unequal-share conversion or an empty offer-stream. OPEN-02/04
+remain open. [GitHub Actions run 44708836529](https://github.com/Kordava/adrobot-keitaro-wrapper/actions/runs/44708836529)
+completed successfully for that exact source commit. The subsequent notes-only
+delta was checked locally; the broader product acceptance remains separate.
+
+## 2026-11-20 — instance-linked OpenAPI documentation
+
+Source: the authenticated [Admin API documentation](https://tlgk.host/admin/?object=adminApi)
+linked by the user. Inspected the Swagger UI's actual OpenAPI document; no
+Try-it-out operation or campaign mutation was executed. This is documentation
+evidence, separate from the live application results above.
+
+- The document is OpenAPI `3.0.0`, API version `v1`, server path `/admin_api/v1`.
+  API `v1` is not the installed Keitaro build/version.
+- `ApiKeyAuth` requires an API key in the `Api-Key` header, matching the verified
+  backend transport.
+- `GET /campaigns/{id}/streams` has one required integer path parameter `id`.
+  Neither path-level nor operation-level parameters declare pagination. Its HTTP
+  200 `application/json` response is an array of `Stream`; no response headers
+  are declared. Together with the observed full array and absent pagination
+  headers, this supports the current single-read implementation of this endpoint.
+- `Stream.offers[]` refers to `OfferStream`, whose `id`, `stream_id`, `offer_id`
+  and `share` are integers and `state` is a string. The read schema specifies no
+  share minimum, maximum or description explaining percentage/weight conversion;
+  it therefore does not resolve OPEN-02 for unequal shares.
+- `StreamObject.schema` lists `landings`, `redirect` and `action`. It does not
+  explicitly describe empty `landings` classification or its allowed persistence
+  behavior. OPEN-04 still requires an actual empty-stream example; no new write
+  behavior is inferred from the enum.
+
+The documentation agrees with the observed read contract and adds no requirement
+to change the approved Fetch implementation. No code or test was changed.
 
 ## 2026-11-20 — application validation update (offline)
 
-No new live observation: the backend key is not configured in this checkout.
-Historical API Explorer observations below remain historical evidence. Header
-authorization through this app, endpoint completeness/pagination and live browser
-Fetch remain unverified (OPEN-01); unequal-share semantics and empty `landings`
-remain OPEN-02/04.
+This section records the offline rules before a backend key was configured.
+The live verification above supersedes its earlier integration status; historical
+API Explorer observations below remain historical evidence. Unequal-share
+semantics and empty `landings` remain OPEN-02/04.
 
 The client accepts only HTTP 200 with a JSON array. Content-Range or a Link with
 `rel=next` rejects the read as incomplete; these are defensive checks, not observed
