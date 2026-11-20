@@ -15,3 +15,10 @@ table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 :where(td, th) { padding: .65rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
 #stream-list { overflow-wrap: anywhere; }
 @media (max-width: 560px) { main { margin: 0; border-radius: 0; padding: 1.25rem; } table { font-size: .8rem; } :where(td, th) { padding: .4rem; } }
+
+#create-form label { display: block; font-weight: 600; margin-top: .9rem; }
+#create-form input { width: min(100%, 35rem); box-sizing: border-box; }
+#offer-results { max-height: 12rem; overflow-y: auto; }
+.offer-option { display: block; width: 100%; text-align: left; margin: .2rem 0;
+  padding: .45rem .65rem; background: #e2e8f0; color: #1e293b; }
+#create-result { overflow-wrap: anywhere; }

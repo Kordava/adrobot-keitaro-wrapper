@@ -87,3 +87,6 @@ form.addEventListener('submit', async (event) => {
     idInput.disabled = false;
   }
 });
+
+// Created campaign links use the exact same Fetch path as manual submission.
+if (idInput.dataset.autofetch === 'true') form.requestSubmit();

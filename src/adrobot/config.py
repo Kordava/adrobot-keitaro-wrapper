@@ -18,6 +18,45 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./adrobot.db"
     log_level: str = "INFO"
 
+    # Optional, deliberately disabled write functionality. This does not affect
+    # health or existing read-only Fetch when local discovery is incomplete.
+    create_domain_id: int | None = None
+    create_group_id: int | None = None
+    create_traffic_source_id: int | None = None
+    create_offer_action_type: str | None = None
+    create_mapping_verified: bool = False
+    create_writes_enabled: bool = False
+
+    @field_validator("create_domain_id", "create_group_id", "create_traffic_source_id")
+    @classmethod
+    def validate_create_id(cls, value: int | None) -> int | None:
+        from adrobot.keitaro.read_models import JS_SAFE_INTEGER
+
+        if value is not None and (type(value) is not int or not 1 <= value <= JS_SAFE_INTEGER):
+            raise ValueError("Create default must be a positive safe integer")
+        return value
+
+    @field_validator("create_offer_action_type")
+    @classmethod
+    def validate_offer_action(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        if not value.isascii() or not value.replace("_", "").isalnum() or len(value) > 40:
+            raise ValueError("Invalid Create offer action type")
+        return value
+
+    @property
+    def create_defaults_configured(self) -> bool:
+        return all(
+            item is not None
+            for item in (
+                self.create_domain_id,
+                self.create_group_id,
+                self.create_traffic_source_id,
+                self.create_offer_action_type,
+            )
+        )
+
     @field_validator("keitaro_url")
     @classmethod
     def validate_keitaro_url(cls, value: str | None) -> str | None:

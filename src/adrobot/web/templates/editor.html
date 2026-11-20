@@ -15,7 +15,8 @@
       изменения, архив и Pin будут добавлены в следующих задачах.</p>
     <form id="fetch-form">
       <label for="campaign-id">Числовой ID кампании</label>
-      <input id="campaign-id" type="number" min="1" step="1" required autocomplete="off">
+      <input id="campaign-id" type="number" min="1" step="1" required autocomplete="off"
+        {% if selected_campaign_id is not none %}value="{{ selected_campaign_id }}" data-autofetch="true"{% endif %}>
       <button id="fetch-button" type="submit">Fetch streams from KT</button>
     </form>
     <p id="status" role="status" aria-live="polite"></p>

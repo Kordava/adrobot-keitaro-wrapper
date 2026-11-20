@@ -54,6 +54,7 @@ def create_app(
             yield
 
     app = FastAPI(title="Adrobot", lifespan=lifespan)
+    app.state.settings = config
     app.add_exception_handler(KeitaroError, keitaro_exception_handler)
 
     @app.middleware("http")

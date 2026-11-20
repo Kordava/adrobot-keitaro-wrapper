@@ -77,3 +77,12 @@ class KeitaroUpstreamValidationError(KeitaroError):
 
     code = "keitaro_upstream_validation_error"
     status_code = 502
+
+
+class KeitaroWriteError(Exception):
+    """Safe post-attempt failure; whether a mutation may have been committed."""
+
+    def __init__(self, *, ambiguous: bool, category: str) -> None:
+        super().__init__("Remote write did not yield a confirmed result")
+        self.ambiguous = ambiguous
+        self.category = category

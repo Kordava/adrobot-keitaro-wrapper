@@ -29,6 +29,7 @@ class JsonFormatter(logging.Formatter):
             "error_code",
             "failure_kind",
             "failure_stage",
+            "last_confirmed_stage",
             "upstream_status",
         ):
             if hasattr(record, key):

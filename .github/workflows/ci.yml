@@ -32,7 +32,9 @@ jobs:
       - name: Tests
         run: uv run --locked pytest
       - name: JavaScript syntax
-        run: node --check src/adrobot/web/static/editor.js
+        run: |
+          node --check src/adrobot/web/static/editor.js
+          node --check src/adrobot/web/static/create.js
       - name: Migrations (empty DB)
         env:
           ADROBOT_DATABASE_URL: sqlite:///${{ runner.temp }}/adrobot-bootstrap.db

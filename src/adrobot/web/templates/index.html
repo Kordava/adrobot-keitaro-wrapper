@@ -5,13 +5,31 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Adrobot · Создание кампании</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/create.js" defer></script>
 </head>
 <body>
   <main>
-    <div class="eyebrow">ADROBOT · TASK-01</div>
-    <h1>Кампании Keitaro</h1>
-    <p>Основа проекта готова. Создание кампаний будет доступно после проверки API (TASK-02).</p>
-    <a href="/editor">Перейти к чтению потоков</a>
+    <div class="eyebrow">ADROBOT · TASK-02 · CREATE</div>
+    <h1>Новая кампания Keitaro</h1>
+    <p>Создадим кампанию с GEO-переадресацией на Google и fallback на существующий оффер.</p>
+    <p class="muted">При сетевой ошибке после нажатия «Создать» результат может быть неизвестен.
+      Не отправляйте повторный запрос без проверки Keitaro.</p>
+    <p id="create-defaults" role="status" aria-live="polite">Проверяем настройки Create…</p>
+    <form id="create-form">
+      <label for="create-name">Name</label>
+      <input id="create-name" name="name" type="text" maxlength="120" required autocomplete="off">
+      <label for="create-geo">GEO (ISO 3166-1, несколько стран через запятую)</label>
+      <input id="create-geo" name="geo" type="text" maxlength="256" placeholder="AU, MX" required autocapitalize="characters">
+      <label for="offer-search">Найти существующий оффер по ID или имени</label>
+      <input id="offer-search" type="search" maxlength="100" placeholder="Название или ID" autocomplete="off">
+      <div id="offer-results" aria-live="polite"></div>
+      <label for="create-offer-id">Offer ID</label>
+      <input id="create-offer-id" name="offer_id" type="number" min="1" max="9007199254740991" step="1" required autocomplete="off">
+      <button id="create-submit" type="submit">Создать кампанию</button>
+    </form>
+    <p id="create-status" role="status" aria-live="polite"></p>
+    <p id="create-result"></p>
+    <p><a href="/editor">Перейти к чтению существующей кампании</a></p>
   </main>
 </body>
 </html>
