@@ -1,4 +1,4 @@
-# Create browser acceptance (optional, fully offline)
+# Create and editor browser regressions (fully offline)
 
 This test launches a real loopback FastAPI process with a deterministic `httpx.MockTransport`.
 **It never connects to `tlgk.host` or performs real Keitaro writes.** The fixture's
@@ -28,7 +28,10 @@ response, displays an unconfirmed outcome and sends **no automatic retry**;
 (3) a gateway returns **valid JSON 502 after complete Create**: the UI must
 still show unconfirmed outcome and disable the button;
 (4) a real backend PARTIAL due to the fallback stream POST shows both the last
-confirmed GEO response and the failed fallback attempt, without a retry.
+confirmed GEO response and the failed fallback attempt, without a retry;
+(5) editor Fetch renders a known binding as `Removed / 0%` in an empty offer
+stream and shows the redirect separately. A malformed neighboring stream
+then triggers a real backend 502 while preserving the previous cards and rows.
 
 Record the actual tool versions and exit code. If the browser or bindings are
 unavailable, mark browser verification OPEN, not PASS. Real Keitaro POST is

@@ -25,7 +25,7 @@ class RemoteCampaign:
 
 
 async def read_remote_campaign(upstream: KeitaroClient, campaign_id: int) -> RemoteCampaign:
-    """Reject ambiguous identity and empty offers before any SQLite DML.
+    """Validate binding identity and resolve names before any archive writes.
 
     This policy belongs only to the editor. The B0 diagnostic endpoint continues
     to return the raw duplicate logical offers without deduplicating them.
@@ -35,11 +35,6 @@ async def read_remote_campaign(upstream: KeitaroClient, campaign_id: int) -> Rem
     for stream in streams:
         if stream.schema_name != "landings":
             continue
-        if not stream.offers:
-            raise EditorProblem(
-                "editor_empty_offer_stream_unconfirmed",
-                "An empty offer stream cannot yet be synchronized with the local archive",
-            )
         ids: set[int] = set()
         for binding in stream.offers:
             if binding.offer_id in ids:

@@ -19,7 +19,17 @@ contracts remain open.
 **OPEN-02.** Create persisted an integer `share=100` for one active binding.
 Unequal-share conversion, rounding and Push remain unverified.
 
-**OPEN-03/04:** binding `id` and `offer_id` are distinct; live Remove/Readd changes the binding ID, and a specific duplicate PUT collapsed to one row. These observations justify the guarded B1 logical archive key but not a universal uniqueness guarantee. An empty `landings/offers=[]` was observed; safe editor synchronization remains deferred to B2.
+**OPEN-03.** Binding `id` and `offer_id` are distinct. Live Remove/Readd changed
+the binding ID, and a specific duplicate PUT collapsed to one row. The editor
+uses the guarded logical archive key and rejects duplicates within a stream.
+
+**OPEN-04.** The authorized probe below saved an empty offer stream. The list
+and detail GETs both read it back as `schema=landings`, `offers=[]`.
+Stage B2 accepts that shape in a complete, validated editor Fetch and retains
+known bindings as Removed with their history and Pin. An empty redirect is a
+non-offer stream. A first-seen empty offer stream creates no archive rows, so
+its later absence or type change is evaluated from the current valid response.
+Editor Fetch reads Keitaro. Publishing an empty composition is outside B2.
 
 **OPEN-05.** The tested Create defaults are domain `1813`, campaign group `9799`
 and traffic source `836`. All three were validated through GET and confirmed

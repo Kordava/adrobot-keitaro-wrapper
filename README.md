@@ -2,9 +2,9 @@
 
 Adrobot is intended to create Keitaro campaigns and edit their offer bindings.
 The current implementation supports an archive-synchronized editor Fetch
-(TASK-03 Stage B1), a separate read-only diagnostic Fetch (TASK-01/B0),
+(TASK-03 Stage B2), a separate read-only diagnostic Fetch (TASK-01/B0),
 and an explicitly gated Create workflow (TASK-02). Remote editor Push is
-not implemented; Stage B1 makes **no** Keitaro write requests.
+not implemented. Editor Fetch makes **no** Keitaro write requests.
 The [requirements](docs/requirements/README.md) describe the full product scope,
 task dependencies and acceptance criteria.
 
@@ -62,11 +62,16 @@ names, binding IDs, Adrobot Active/Removed, Keitaro active/disabled, last known
 raw `share` and preserved Pin. `Removed / 0%` does not erase historical values.
 Neither actual shares nor historical raw values are normalized. The full base
 and pinned state for **each offer stream** can be passed to the existing stateless
-Preview API, but UI mutations and remote Push are not yet available. In the
-current Stage B1 boundary, a duplicate global Offer within the same stream
-returns `409 editor_duplicate_offer_id`, and an empty `landings/offers=[]`
-returns `409 editor_empty_offer_stream_unconfirmed` until Stage B2.
-These failures do not write to the archive. Non-offer streams remain read-only.
+Preview API. A complete, valid `schema=landings` stream with `offers=[]` has an
+empty active composition. Previously seen bindings appear as `Removed / 0%`
+with their history and Pin. A first-seen empty stream has no archive rows.
+Redirect streams appear separately as non-offer streams.
+
+A duplicate global Offer in one stream returns `409 editor_duplicate_offer_id`.
+A stream with archived bindings that disappears or changes type also returns
+`409`. Malformed or incomplete reads leave the campaign archive and previous
+display intact. Removing the last active offer from a nonempty Preview base is
+still forbidden. Interactive draft actions and remote Push are future work.
 Create remains gated by its own integration prerequisites.
 
 ### Live Fetch smoke (authorized test instance only)
@@ -191,8 +196,8 @@ CI runs these gates on Python 3.12 and 3.13, plus two Alembic upgrades against
 a separate temporary SQLite database. It needs no Keitaro secrets or live API.
 The offline tests use fake HTTP/ASGI clients for HTTP errors, malformed nested
 responses, ordered safe projections, Create sequences, failure boundaries and
-startup/static assets. They do not prove live integration. An opt-in Chromium
-end-to-end Create→editor and post-Create lost-response regression lives in
+startup/static assets. They do not prove live integration. Opt-in Chromium
+regressions for Create→editor, post-Create errors and empty-stream Fetch live in
 `tests/browser/` (requires external Playwright/Chromium; not a new locked dependency). Actual GitHub Actions on the published state remains
 a separate acceptance gate; local success does not close AC-Q-05.
 
@@ -218,15 +223,14 @@ pack proves document provenance and references, not application acceptance.
   the router serves HTML and deliberately narrow API responses.
 - Missing or malformed nested fields produce **502**, never a synthetic empty
   list. A failed Fetch retains the previous successful UI table.
-- B1 stores known offers in a migrated SQLite archive and returns full
+- Editor Fetch stores known offers in a migrated SQLite archive and returns full
   independent Preview bases, names, status and persisted Pin per stream. The
   arithmetic-only `SNAPSHOT`/`RECALCULATED` Preview exists; interactive draft
   operations, freshness in the browser and Keitaro Push remain future work.
-- Live unequal-share mapping (OPEN-02) and complete empty offer-stream
-  synchronization (OPEN-04/Stage B2) are not resolved. A dedicated live test
-  established that `binding_id` can change on Remove/Readd; it did **not**
-  establish global uniqueness for `offer_id`. B1 deliberately refuses duplicate
-  current offers in a single stream; B0 still shows their binding rows.
+- Live unequal-share mapping (OPEN-02) remains open. The OPEN-04 probe
+  observed a persisted empty `landings` in both list and detail GETs and a new
+  `binding_id` after Remove/Readd. The editor rejects duplicate current
+  occurrences of the same Offer within a stream; B0 shows their binding rows.
 - Create reports `PARTIAL` and `UNKNOWN` explicitly. TASK-04 Push will need
   `CONFLICT` and separate revision/CAS discipline; this implementation does not
   provide atomic CAS against Keitaro. GET/PUT races and temporary drafts are

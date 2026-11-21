@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from typing import Literal
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tests"))
@@ -9,12 +10,22 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import httpx  # noqa: E402
 import uvicorn  # noqa: E402
+from b1_support import FakeKeitaro, stream  # noqa: E402
 from create_fakes import FakeCreateKeitaro  # noqa: E402
 
 from adrobot.config import Settings  # noqa: E402
 from adrobot.main import create_app  # noqa: E402
 
 fake = FakeCreateKeitaro()
+editor_fake: FakeKeitaro | None = None
+
+
+def upstream(request: httpx.Request) -> httpx.Response:
+    if editor_fake is not None:
+        return editor_fake.handler(request)
+    return fake(request)
+
+
 app = create_app(
     Settings(
         keitaro_url="https://tracker.example",
@@ -27,7 +38,7 @@ app = create_app(
         create_writes_enabled=True,
         _env_file=None,
     ),
-    keitaro_transport=httpx.MockTransport(fake),
+    keitaro_transport=httpx.MockTransport(upstream),
 )
 
 
@@ -58,6 +69,20 @@ def set_partial_fallback() -> dict[str, str]:
     """Synthetic-only known failure of the third write for browser display."""
     fake.fail_post_at = 3
     fake.fail_post_status = 422
+    return {"status": "configured"}
+
+
+@app.post("/__test__/editor/{phase}")
+def set_editor_phase(phase: Literal["active", "empty", "malformed"]) -> dict[str, str]:
+    """Switch the synthetic upstream payload used by the real editor route."""
+    global editor_fake
+    pairs = [(101, 201, 25, "active")] if phase == "active" else []
+    target = stream(pairs=pairs, campaign_id=502)
+    neighbor = stream(12, [(103, 203, 100, "active")], campaign_id=502, position=2)
+    redirect = stream(13, [], campaign_id=502, position=3, schema="redirect")
+    if phase == "malformed":
+        neighbor.pop("offers")
+    editor_fake = FakeKeitaro([target, neighbor, redirect])
     return {"status": "configured"}
 
 

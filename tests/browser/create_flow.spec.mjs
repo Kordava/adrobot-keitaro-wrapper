@@ -38,6 +38,51 @@ async function fillCreate(page) {
   await page.locator('#create-offer-id').fill('42');
 }
 
+async function checkEmptyStreamFetch(browser) {
+  const page = await browser.newPage();
+  const list = page.locator('#stream-list');
+  const target = list.locator('.stream-card').filter({ hasText: 'Stream 11 · #11' });
+  const neighbor = list.locator('.stream-card').filter({ hasText: 'Stream 12 · #12' });
+  const redirect = list.locator('.stream-card').filter({ hasText: 'Stream 13 · #13' });
+
+  async function fetchAtPhase(phase, expectedStatus) {
+    const configured = await fetch(`${origin}/__test__/editor/${phase}`, { method: 'POST' });
+    assert.equal(configured.status, 200);
+    const [response] = await Promise.all([
+      page.waitForResponse(`${origin}/api/campaigns/502/editor`),
+      page.locator('#fetch-button').click(),
+    ]);
+    assert.equal(response.status(), expectedStatus);
+    return response.json();
+  }
+
+  try {
+    await page.goto(origin + '/editor');
+    await page.locator('#campaign-id').fill('502');
+    await fetchAtPhase('active', 200);
+    await target.getByText('25 (KT raw)', { exact: true }).waitFor();
+
+    await fetchAtPhase('empty', 200);
+    const archived = target.locator('tbody tr');
+    await archived.getByText('Removed / 0% · last KT raw 25', { exact: true }).waitFor();
+    assert.deepEqual(await archived.locator('td').allTextContents(), [
+      '101', 'Name v1', 'Removed', 'last binding #201',
+      'Removed / 0% · last KT raw 25', 'Unpinned',
+    ]);
+    assert.match(await neighbor.locator('tbody tr').innerText(), /Active.*100 \(KT raw\)/s);
+    assert.match(await redirect.innerText(), /другой тип потока/);
+    assert.equal(await redirect.locator('table').count(), 0);
+    const lastSnapshot = await list.innerHTML();
+
+    const rejected = await fetchAtPhase('malformed', 502);
+    assert.equal(rejected.error.code, 'keitaro_contract_error');
+    await page.getByText(/Ошибка чтения:.*Предыдущие данные/).waitFor();
+    assert.equal(await list.innerHTML(), lastSnapshot);
+  } finally {
+    await page.close();
+  }
+}
+
 const dataDir = await mkdtemp(path.join(tmpdir(), 'adrobot-create-flow-'));
 let browser;
 let server;
@@ -175,7 +220,9 @@ try {
   const partialState = await (await fetch(`${origin}/__test__/state`)).json();
   assert.deepEqual([partialState.campaign_writes, partialState.stream_writes], [1, 2]);
   await partial.close();
-  process.stdout.write('PASS: browser link, dropped response, gateway JSON after Create, partial stage\n');
+
+  await checkEmptyStreamFetch(browser);
+  process.stdout.write('PASS: browser link, dropped response, gateway JSON after Create, partial stage, empty-stream Fetch and retained display\n');
 } finally {
   try {
     if (browser) await browser.close();

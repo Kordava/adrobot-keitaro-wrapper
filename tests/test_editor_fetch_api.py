@@ -1,4 +1,4 @@
-"""B1: fail-closed editor Fetch, two-stream atomicity and unaffected diagnostic B0."""
+"""Editor Fetch through HTTP, campaign-wide atomicity and diagnostic isolation."""
 
 import sqlite3
 from pathlib import Path
@@ -16,6 +16,9 @@ from b1_support import (
 )
 from fastapi.testclient import TestClient
 from sqlalchemy import event
+
+PREVIEW = "/api/campaigns/501/streams/11/preview"
+STREAMS_PATH = "/admin_api/v1/campaigns/501/streams"
 
 
 def _dml_spy(app) -> list[str]:
@@ -89,23 +92,30 @@ def test_duplicate_in_second_stream_rejects_whole_campaign_with_zero_dml(tmp_pat
 
 
 @pytest.mark.parametrize(
-    ("mutate", "status", "code"),
+    ("mutate", "code", "archived"),
     [
-        (lambda items: items[0]["offers"].clear(), 409, "editor_empty_offer_stream_unconfirmed"),
         (
             lambda items: items[0]["offers"][0].update(state="unknown"),
-            409,
             "editor_binding_state_unrecognized",
+            False,
         ),
-        (lambda items: items.pop(), 409, "editor_known_stream_missing"),
+        (lambda items: items.pop(), "editor_known_stream_missing", False),
+        (lambda items: items.pop(), "editor_known_stream_missing", True),
         (
             lambda items: items[1].update(schema="redirect", offers=[]),
-            409,
             "editor_known_stream_type_changed",
+            False,
+        ),
+        (
+            lambda items: items[1].update(schema="redirect", offers=[]),
+            "editor_known_stream_type_changed",
+            True,
         ),
     ],
 )
-def test_bad_or_missing_stream_never_writes(tmp_path: Path, mutate, status: int, code: str) -> None:
+def test_bad_or_missing_stream_never_writes(
+    tmp_path: Path, mutate, code: str, archived: bool
+) -> None:
     db = tmp_path / "unchanged.db"
     migrate(db)
     fake = FakeKeitaro(
@@ -117,17 +127,244 @@ def test_bad_or_missing_stream_never_writes(tmp_path: Path, mutate, status: int,
     app = app_for(db, fake)
     with TestClient(app) as client:
         assert editor(client).status_code == 200
+        if archived:
+            fake.streams[1]["offers"].clear()
+            archived_response = editor(client)
+            assert archived_response.status_code == 200, archived_response.text
+            assert archived_response.json()["streams"][1]["known_offers"][0]["status"] == "Removed"
         before = db_rows(db)
         spy = _dml_spy(app)
         mutate(fake.streams)
-        res = editor(client)
-        _check_error(res, status, code)
+        _check_error(editor(client), 409, code)
         assert db_rows(db) == before
         assert spy == []
-        if code == "editor_empty_offer_stream_unconfirmed":
-            diagnostic = client.get("/api/campaigns/501/remote-snapshot")
-            assert diagnostic.status_code == 200
-            assert diagnostic.json()["streams"][0]["offers"] == []
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        pytest.param(lambda item: item.pop("offers"), id="absent"),
+        pytest.param(lambda item: item.update(offers=None), id="null"),
+        pytest.param(lambda item: item.update(offers={}), id="object"),
+    ],
+)
+def test_empty_stream_with_malformed_neighbor_rejects_entire_fetch(tmp_path: Path, damage) -> None:
+    db = tmp_path / "malformed-neighbor.db"
+    migrate(db)
+    fake = FakeKeitaro([stream(), stream(12, [(103, 203, 100, "active")], position=2)])
+    app = app_for(db, fake)
+    with TestClient(app) as client:
+        seeded = editor(client)
+        assert seeded.status_code == 200, seeded.text
+        pin(db, 11, 101, 25)
+        pin(db, 12, 103, 50)
+        before = db_rows(db)
+        spy = _dml_spy(app)
+
+        fake.streams[0]["offers"] = []
+        damage(fake.streams[1])
+        _check_error(editor(client), 502, "keitaro_contract_error")
+        assert spy == [], "No INSERT/UPDATE/DELETE, even before a rollback"
+        assert db_rows(db) == before
+
+
+def test_empty_stream_archives_and_restores_bindings_through_fetch(tmp_path: Path) -> None:
+    db = tmp_path / "empty-lifecycle.db"
+    migrate(db)
+    neighbor = stream(12, [(103, 203, 100, "active")], position=2)
+    fake = FakeKeitaro(
+        [stream(pairs=[(101, 201, 25, "disabled"), (102, 202, 75, "active")]), neighbor]
+    )
+    with TestClient(app_for(db, fake)) as client:
+        assert editor(client).status_code == 200
+        pin(db, 11, 101, 25)
+        pin(db, 11, 102, 75)
+        pin(db, 12, 103, 40)
+        fake.streams[0]["offers"].pop()
+        partial = editor(client)
+        assert partial.status_code == 200, partial.text
+        previous, previous_neighbor = partial.json()["streams"]
+        before = db_rows(db)
+        assert before[0][-1] is None
+        assert before[1][-1] is not None
+
+        fake.streams[0]["offers"] = []
+        result = editor(client)
+        assert result.status_code == 200, result.text
+        snapshot = result.json()
+        assert snapshot["mapping_status"] == "archive_synced"
+        assert snapshot["local_archive_synced"] is True
+        empty, current_neighbor = snapshot["streams"]
+        assert empty["kind"] == "offers"
+        assert empty["offers"] == []
+        assert empty["editor"]["base_offers"] == empty["editor"]["active_ids"] == []
+        assert empty["editor"]["base_known_ids"] == empty["editor"]["draft_known_ids"] == [101, 102]
+        assert (
+            empty["editor"]["base_pinned_shares"]
+            == empty["editor"]["pinned_shares"]
+            == {
+                "101": 25,
+                "102": 75,
+            }
+        )
+        first_removed, already_removed = empty["known_offers"]
+        assert first_removed["removed_at"] is not None
+        assert first_removed == {
+            **previous["known_offers"][0],
+            "status": "Removed",
+            "binding_id": None,
+            "kt_state": None,
+            "display_share": 0,
+            "display_share_unit": "percentage_points",
+            "removed_at": first_removed["removed_at"],
+        }
+        assert already_removed == previous["known_offers"][1]
+        assert current_neighbor["offers"] == previous_neighbor["offers"]
+        assert current_neighbor["editor"] == previous_neighbor["editor"]
+        assert current_neighbor["known_offers"][0]["status"] == "Active"
+        after = db_rows(db)
+        assert after[0][:-1] == before[0][:-1] and after[0][-1] is not None
+        assert after[1] == before[1]
+        assert after[2][:9] == before[2][:9] and after[2][-1] is None
+
+        repeat = editor(client)
+        assert repeat.status_code == 200, repeat.text
+        assert repeat.json()["streams"][0] == empty
+        assert db_rows(db)[:2] == after[:2]
+
+        fake.names[101] = "Renamed after return"
+        fake.streams[0] = stream(pairs=[(101, 301, 100, "active")])
+        restored = editor(client)
+        assert restored.status_code == 200, restored.text
+        restored_row, remaining_archive = restored.json()["streams"][0]["known_offers"]
+        assert restored_row == {
+            **first_removed,
+            "binding_id": 301,
+            "last_binding_id": 301,
+            "name": "Renamed after return",
+            "status": "Active",
+            "kt_state": "active",
+            "last_seen_kt_state": "active",
+            "display_share": 100,
+            "display_share_unit": "kt_raw",
+            "last_seen_raw_share": 100,
+            "last_seen_at": restored_row["last_seen_at"],
+            "removed_at": None,
+        }
+        assert restored_row["last_seen_at"] > first_removed["last_seen_at"]
+        assert remaining_archive == already_removed
+        rows = db_rows(db)
+        assert len(rows) == 3
+        assert rows[0][3:8] == (301, "Renamed after return", 25, 100, "active")
+        assert rows[0][8] == before[0][8] and rows[0][-1] is None
+        assert rows[1] == before[1]
+
+
+@pytest.mark.parametrize("replacement", [False, True], ids=["absent", "redirect"])
+def test_first_seen_empty_stream_has_preview_without_archive(
+    tmp_path: Path, replacement: bool
+) -> None:
+    db = tmp_path / "first-empty.db"
+    migrate(db)
+    redirect = stream(12, [], position=2, schema="redirect")
+    fake = FakeKeitaro([stream(pairs=[]), redirect])
+    app = app_for(db, fake)
+    with TestClient(app) as client:
+        result = editor(client)
+        assert result.status_code == 200, result.text
+        empty, non_offer = result.json()["streams"]
+        assert empty["kind"] == "offers"
+        assert empty["offers"] == empty["known_offers"] == []
+        assert empty["editor"]["base_known_ids"] == empty["editor"]["draft_known_ids"] == []
+        assert empty["editor"]["base_offers"] == empty["editor"]["active_ids"] == []
+        assert empty["editor"]["base_pinned_shares"] == empty["editor"]["pinned_shares"] == {}
+        assert non_offer["kind"] == "non_offer"
+        assert non_offer["offers"] == non_offer["known_offers"] == []
+        assert non_offer["editor"] is None
+        preview = client.post(PREVIEW, json=empty["editor"])
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["mode"] == "SNAPSHOT"
+        assert preview.json()["dirty"] is False
+        assert preview.json()["rows"] == []
+        diagnostic = client.get("/api/campaigns/501/remote-snapshot")
+        assert diagnostic.status_code == 200
+        assert diagnostic.json()["mapping_status"] == "remote_only"
+        assert [(s["kind"], s["offers"]) for s in diagnostic.json()["streams"]] == [
+            ("offers", []),
+            ("non_offer", []),
+        ]
+        assert db_rows(db) == []
+
+        spy = _dml_spy(app)
+        fake.streams = (
+            [stream(pairs=[], schema="redirect"), redirect] if replacement else [redirect]
+        )
+        followup = editor(client)
+        assert followup.status_code == 200, followup.text
+        streams = followup.json()["streams"]
+        assert [s["id"] for s in streams] == ([11, 12] if replacement else [12])
+        assert all(s["kind"] == "non_offer" and s["editor"] is None for s in streams)
+        assert fake.calls == [STREAMS_PATH] * 3
+        assert db_rows(db) == []
+        assert spy == []
+
+
+def test_preview_from_fetched_empty_base_preserves_pin_rules_and_archive(tmp_path: Path) -> None:
+    db = tmp_path / "empty-preview.db"
+    migrate(db)
+    fake = FakeKeitaro([stream(pairs=[(101, 201, 25, "active")])])
+    app = app_for(db, fake)
+    with TestClient(app) as client:
+        assert editor(client).status_code == 200
+        pin(db, 11, 101, 25)
+        initial = editor(client)
+        assert initial.status_code == 200, initial.text
+        active_base = initial.json()["streams"][0]["editor"]
+        fake.streams[0]["offers"] = []
+        fetched = editor(client)
+        assert fetched.status_code == 200, fetched.text
+        empty_base = fetched.json()["streams"][0]["editor"]
+        before = db_rows(db)
+        spy = _dml_spy(app)
+        fake.calls.clear()
+
+        clean = client.post(PREVIEW, json=empty_base)
+        assert clean.status_code == 200, clean.text
+        assert clean.json()["mode"] == "SNAPSHOT"
+        assert clean.json()["dirty"] is False
+        assert clean.json()["pinned_shares"] == {"101": 25}
+        assert clean.json()["rows"] == [
+            {
+                "id": 101,
+                "share": 0,
+                "status": "Removed",
+                "unit": "percentage_points",
+                "pinned_share": 25,
+            }
+        ]
+
+        bring_back = {**empty_base, "active_ids": [101], "mode": "RECALCULATED"}
+        _check_error(client.post(PREVIEW, json=bring_back), 422, "incompatible_pin")
+        accepted = client.post(PREVIEW, json={**bring_back, "pinned_shares": {}})
+        assert accepted.status_code == 200, accepted.text
+        assert accepted.json()["mode"] == "RECALCULATED"
+        assert accepted.json()["dirty"] is True
+        assert accepted.json()["pinned_shares"] == {}
+        assert accepted.json()["rows"] == [
+            {
+                "id": 101,
+                "share": 100,
+                "status": "Active",
+                "unit": "percentage_points",
+                "pinned_share": None,
+            }
+        ]
+
+        remove_last = {**active_base, "active_ids": [], "mode": "RECALCULATED"}
+        _check_error(client.post(PREVIEW, json=remove_last), 422, "empty_active_forbidden")
+        assert fake.calls == []
+        assert spy == []
+        assert db_rows(db) == before
 
 
 def test_full_remote_read_failure_does_not_mark_removed(tmp_path: Path) -> None:
