@@ -27,26 +27,33 @@ function streamCard(stream) {
     card.appendChild(element('p', 'Без редактирования и разбора redirect/фильтров.', 'muted'));
     return card;
   }
-  if (stream.offers.length === 0) {
-    card.appendChild(element('p', 'В Keitaro сейчас нет привязок. История появится в TASK-03.', 'muted'));
+  if (!stream.editor || !Array.isArray(stream.known_offers)) {
+    card.appendChild(element('p', 'История потока недоступна.', 'muted'));
     return card;
   }
 
   const table = document.createElement('table');
   const header = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  for (const label of ['Binding ID', 'Offer ID', 'Состояние', 'Share (KT)']) {
+  for (const label of ['Offer ID', 'Имя', 'Статус Adrobot', 'Keitaro', 'Share / история', 'Pin']) {
     headerRow.appendChild(element('th', label));
   }
   header.appendChild(headerRow);
   table.appendChild(header);
 
   const body = document.createElement('tbody');
-  for (const offer of stream.offers) {
+  for (const offer of stream.known_offers) {
     const row = document.createElement('tr');
-    for (const text of [offer.binding_id, offer.offer_id, offer.state, offer.share]) {
-      row.appendChild(element('td', String(text)));
-    }
+    const live = offer.status === 'Active';
+    const values = [
+      offer.offer_id,
+      offer.name,
+      offer.status,
+      live ? `${offer.kt_state} · binding #${offer.binding_id}` : `last binding #${offer.last_binding_id ?? '—'}`,
+      live ? `${offer.display_share} (KT raw)` : `Removed / 0% · last KT raw ${offer.last_seen_raw_share}`,
+      offer.pinned_share === null ? 'Unpinned' : `${offer.pinned_share}%`,
+    ];
+    for (const value of values) row.appendChild(element('td', String(value)));
     body.appendChild(row);
   }
   table.appendChild(body);
@@ -70,7 +77,7 @@ form.addEventListener('submit', async (event) => {
     if (!response.ok) {
       throw new Error(result.error?.message || result.detail || `HTTP ${response.status}`);
     }
-    if (result.mapping_status !== 'remote_only' || !Array.isArray(result.streams)) {
+    if (result.mapping_status !== 'archive_synced' || result.local_archive_synced !== true || !Array.isArray(result.streams)) {
       throw new Error('Получен неожиданный формат ответа Adrobot');
     }
     const view = document.createDocumentFragment();
@@ -79,7 +86,7 @@ form.addEventListener('submit', async (event) => {
     // Replace only after a *complete* successful response. A read failure
     // must not erase previously displayed data or simulate remote deletion.
     list.replaceChildren(view);
-    status.textContent = 'Чтение выполнено. Данные только из Keitaro; изменений и архива пока нет.';
+    status.textContent = 'Fetch завершён; архив синхронизирован. Это просмотр без публикации в Keitaro.';
   } catch (error) {
     status.textContent = `Ошибка чтения: ${error.message}. Предыдущие данные (если были) сохранены.`;
   } finally {

@@ -108,13 +108,11 @@ def test_existing_readonly_fetch_is_unaffected_and_safe() -> None:
         }
     ]
     with TestClient(fake_app(fake, write=False, mapping=False)) as client:
-        response = client.get("/api/campaigns/501/editor")
         diagnostic = client.get("/api/campaigns/501/remote-snapshot")
-    assert response.status_code == diagnostic.status_code == 200
-    assert response.json() == diagnostic.json()
-    assert response.json()["mapping_status"] == "remote_only"
-    assert response.json()["streams"][0]["offers"][0]["share"] == 100
-    assert "PRIVATE" not in response.text + diagnostic.text
+    assert diagnostic.status_code == 200
+    assert diagnostic.json()["mapping_status"] == "remote_only"
+    assert diagnostic.json()["streams"][0]["offers"][0]["share"] == 100
+    assert "PRIVATE" not in diagnostic.text
     assert fake.posts == []
 
 

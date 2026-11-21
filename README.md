@@ -1,9 +1,10 @@
 # Adrobot
 
 Adrobot is intended to create Keitaro campaigns and edit their offer bindings.
-The current implementation supports read-only Fetch (TASK-01) and an offline-
-tested, **disabled-by-default** Create workflow (TASK-02). Live Create is not
-verified or authorized until the instance mapping and write approval are supplied.
+The current implementation supports an archive-synchronized editor Fetch
+(TASK-03 Stage B1), a separate read-only diagnostic Fetch (TASK-01/B0),
+and an explicitly gated Create workflow (TASK-02). Remote editor Push is
+not implemented; Stage B1 makes **no** Keitaro write requests.
 The [requirements](docs/requirements/README.md) describe the full product scope,
 task dependencies and acceptance criteria.
 
@@ -32,8 +33,14 @@ The existing SQLite bootstrap is run separately:
 uv run --locked alembic upgrade head
 ```
 
-It currently creates only the Alembic bootstrap, not the editor archive schema.
-`known_offer_bindings` and its constraints belong to TASK-03/OPEN-03.
+The command explicitly creates/migrates `known_offer_bindings`; the runtime
+**never** creates the file or tables automatically. Without a migrated SQLite
+file, `/editor` returns `503`, while `/health` and `/remote-snapshot` still work.
+The archive has a composite key `(campaign_id, stream_id, offer_id)`. Run the
+upgrade with **the same `ADROBOT_DATABASE_URL`** as the application. For file
+names containing literal `%`, `#` or `?`, percent-encode the URL path exactly
+once (e.g. `%25`, `%23`, `%3F`); a literal `%25` filename sequence needs `%2525`.
+Do not use unescaped query strings or in-memory DB URLs for persistent runtime.
 
 ### Configure live Fetch
 
@@ -50,13 +57,17 @@ key in a URL, browser JavaScript, screenshots or logs. The backend uses the
 `Api-Key` header, validates TLS certificates and does not follow redirects.
 
 Enter a **numeric campaign ID** in the editor and click **Fetch streams from KT**.
-The current page shows ordered streams and, for offer streams, binding ID,
-global offer ID, binding state and the *raw* upstream `share` integer. It does
-not normalize shares or claim they are traffic percentages for unequal mixes.
-Non-offer streams are displayed without exposing their redirects or filters.
-There is **no editor archive, Pin or Push** at this stage. The stateless
-Preview API is available for internal DTOs (TASK-03 Stage A), but is not yet
-connected to the editor UI. Create remains gated by the integration prerequisites below.
+The editor Fetch synchronizes the local offer archive atomically, then shows
+names, binding IDs, Adrobot Active/Removed, Keitaro active/disabled, last known
+raw `share` and preserved Pin. `Removed / 0%` does not erase historical values.
+Neither actual shares nor historical raw values are normalized. The full base
+and pinned state for **each offer stream** can be passed to the existing stateless
+Preview API, but UI mutations and remote Push are not yet available. In the
+current Stage B1 boundary, a duplicate global Offer within the same stream
+returns `409 editor_duplicate_offer_id`, and an empty `landings/offers=[]`
+returns `409 editor_empty_offer_stream_unconfirmed` until Stage B2.
+These failures do not write to the archive. Non-offer streams remain read-only.
+Create remains gated by its own integration prerequisites.
 
 ### Live Fetch smoke (authorized test instance only)
 
@@ -89,9 +100,10 @@ uv run --locked python -m adrobot.keitaro.inspect 215477
 
 Upstream: `GET /admin_api/v1/campaigns/{id}/streams`. The diagnostic route is
 `GET /api/campaigns/{id}/remote-snapshot`, with `mapping_status=remote_only`
-and `read_only=true`. It never accesses the local editor archive. Until Stage B1,
-the UI continues using `GET /api/campaigns/{id}/editor` with the same remote-only
-projection. Neither route currently supplies a synchronized editor snapshot.
+and `read_only=true`. It never accesses the local editor archive. The editor uses `GET /api/campaigns/{id}/editor` with
+`mapping_status=archive_synced` and `local_archive_synced=true`. Its per-stream
+`editor` field is exactly the nine-field Stage A `PreviewInput`, alongside
+`known_offers`. The diagnostic route/CLI never synchronize or write SQLite.
 
 ### Create Campaign (TASK-02 — guarded until live verification)
 
@@ -148,7 +160,8 @@ the browser; never raw upstream JSON.
 New persistence, deduplication and API write-transaction claims are out of scope.
 `GET /api/reference-data` returns only validation availability and reference
 labels; `GET /api/offers?query=...` returns only existing offer IDs/names.
-The existing read-only editor works without any Create settings.
+The archive-backed editor works without any Create settings, but requires the
+explicit SQLite migration. The diagnostic `/remote-snapshot` remains independent.
 
 **Integration boundary:** the public reference documents the general endpoints
 and fields, but exact POST serialization and GEO action behavior on `tlgk.host`
@@ -205,11 +218,15 @@ pack proves document provenance and references, not application acceptance.
   the router serves HTML and deliberately narrow API responses.
 - Missing or malformed nested fields produce **502**, never a synthetic empty
   list. A failed Fetch retains the previous successful UI table.
-- The planned editor archive stores binding history and Pin in SQLite. Draft
-  modes `SNAPSHOT`/`RECALCULATED`, full Pin handling, Preview freshness and
-  Push/readback are future work, not current capabilities.
-- Live unequal shares and empty offer-stream classification still require
-  instance evidence. API questions remain in `docs/keitaro-api-notes.md`.
+- B1 stores known offers in a migrated SQLite archive and returns full
+  independent Preview bases, names, status and persisted Pin per stream. The
+  arithmetic-only `SNAPSHOT`/`RECALCULATED` Preview exists; interactive draft
+  operations, freshness in the browser and Keitaro Push remain future work.
+- Live unequal-share mapping (OPEN-02) and complete empty offer-stream
+  synchronization (OPEN-04/Stage B2) are not resolved. A dedicated live test
+  established that `binding_id` can change on Remove/Readd; it did **not**
+  establish global uniqueness for `offer_id`. B1 deliberately refuses duplicate
+  current offers in a single stream; B0 still shows their binding rows.
 - Create reports `PARTIAL` and `UNKNOWN` explicitly. TASK-04 Push will need
   `CONFLICT` and separate revision/CAS discipline; this implementation does not
   provide atomic CAS against Keitaro. GET/PUT races and temporary drafts are

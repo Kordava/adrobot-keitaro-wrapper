@@ -91,7 +91,7 @@ def test_read_only_fetch_exposes_safe_ordered_streams_and_bindings() -> None:
         keitaro_transport=httpx.MockTransport(handler),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == 200
     assert response.json() == {
         "campaign_id": 501,
@@ -140,7 +140,7 @@ def test_empty_offer_stream_is_distinct_from_redirect() -> None:
         keitaro_transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == 200
     assert response.json()["streams"][1]["kind"] == "offers"
     assert response.json()["streams"][1]["offers"] == []
@@ -175,7 +175,7 @@ def test_malformed_or_partial_upstream_is_never_reported_as_success(
         keitaro_transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "keitaro_contract_error"
     assert response.json()["error"]["request_id"]
@@ -192,7 +192,7 @@ def test_invalid_json_is_contract_error() -> None:
         keitaro_transport=httpx.MockTransport(lambda _: httpx.Response(200, text="not JSON")),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "keitaro_contract_error"
 
@@ -209,7 +209,7 @@ def test_keitaro_unauthorized_is_redacted() -> None:
         ),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "keitaro_unauthorized"
     assert "secret-from-upstream" not in response.text
@@ -229,7 +229,7 @@ def test_timeout_does_not_turn_into_emptiness() -> None:
         keitaro_transport=httpx.MockTransport(handler),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "keitaro_unavailable"
     assert "private connection details" not in response.text
@@ -256,13 +256,13 @@ def test_remote_http_failures_are_distinguished(
         keitaro_transport=httpx.MockTransport(lambda _: httpx.Response(status)),
     )
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == expected_status
     assert response.json()["error"]["code"] == expected_code
 
 
 @pytest.mark.parametrize("existing_database", [False, True])
-def test_remote_snapshot_matches_editor_without_touching_sqlite(
+def test_remote_snapshot_is_independent_of_archive_migration(
     tmp_path: Path, existing_database: bool
 ) -> None:
     database = tmp_path / "untouched.sqlite"
@@ -275,6 +275,8 @@ def test_remote_snapshot_matches_editor_without_touching_sqlite(
 
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append(request)
+        if request.url.path.endswith("/offers"):
+            return httpx.Response(200, json=[{"id": 42, "name": "A", "state": "active"}])
         return httpx.Response(200, json=streams_fixture())
 
     app = create_app(
@@ -289,8 +291,12 @@ def test_remote_snapshot_matches_editor_without_touching_sqlite(
     with TestClient(app) as client:
         diagnostic = client.get("/api/campaigns/501/remote-snapshot")
         editor = client.get("/api/campaigns/501/editor")
-    assert diagnostic.status_code == editor.status_code == 200
-    assert diagnostic.json() == editor.json()
+    assert diagnostic.status_code == 200
+    assert editor.status_code == 503
+    assert editor.json()["error"]["code"] in {
+        "local_archive_unavailable",
+        "local_archive_schema_missing",
+    }
     assert diagnostic.json()["mapping_status"] == "remote_only"
     assert diagnostic.json()["read_only"] is True
     for response in (diagnostic, editor):
@@ -298,11 +304,8 @@ def test_remote_snapshot_matches_editor_without_touching_sqlite(
         assert response.headers["x-request-id"]
         assert "DO-NOT-EXPOSE" not in response.text
         assert "private-redirect" not in response.text
-    assert len(seen) == 2
-    assert all(
-        request.method == "GET" and request.url.path == "/admin_api/v1/campaigns/501/streams"
-        for request in seen
-    )
+    assert all(request.method == "GET" for request in seen)
+    assert all(request.url.path.startswith("/admin_api/v1/") for request in seen)
     if existing_database:
         assert database.read_bytes() == before
     else:

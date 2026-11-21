@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from adrobot.api.errors import keitaro_exception_handler
 from adrobot.api.routes import router
 from adrobot.config import Settings, get_settings
+from adrobot.editor.fetch_coordinator import FetchCoordinator
 from adrobot.keitaro.client import KeitaroClient
 from adrobot.keitaro.exceptions import KeitaroError
 from adrobot.logging_setup import setup_logging
@@ -36,6 +37,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.keitaro = None
+        app.state.editor_coordinator = FetchCoordinator(config.database_url)
         if config.keitaro_configured:
             assert config.keitaro_url is not None
             assert config.keitaro_api_key is not None
@@ -49,9 +51,15 @@ def create_app(
                 transport=keitaro_transport,
             ) as client:
                 app.state.keitaro = KeitaroClient(client)
-                yield
+                try:
+                    yield
+                finally:
+                    await app.state.editor_coordinator.close()
         else:
-            yield
+            try:
+                yield
+            finally:
+                await app.state.editor_coordinator.close()
 
     app = FastAPI(title="Adrobot", lifespan=lifespan)
     app.state.settings = config

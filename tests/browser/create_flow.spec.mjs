@@ -1,8 +1,10 @@
 // Opt-in real browser regression: start a LOCAL FastAPI with fake Keitaro only.
 // Run: ADROBOT_PLAYWRIGHT_MODULE=file:///path/to/playwright/index.mjs node tests/browser/create_flow.spec.mjs
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { spawn, spawnSync } from 'node:child_process';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -10,15 +12,8 @@ const port = Number(process.env.ADROBOT_BROWSER_PORT || '18765');
 const origin = `http://127.0.0.1:${port}`;
 const playwrightModule = process.env.ADROBOT_PLAYWRIGHT_MODULE || 'playwright';
 const { chromium } = await import(playwrightModule);
-const server = spawn(process.env.ADROBOT_PYTHON || 'python',
-  ['tests/browser/fake_server.py'], {
-    cwd: projectRoot,
-    env: { ...process.env, ADROBOT_BROWSER_PORT: String(port),
-      PYTHONPATH: path.join(projectRoot, 'src') },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+const python = process.env.ADROBOT_PYTHON || 'python';
 let serverErrors = '';
-server.stderr.on('data', bytes => { serverErrors += bytes.toString().slice(0, 250); });
 
 async function waitForServer() {
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -43,8 +38,30 @@ async function fillCreate(page) {
   await page.locator('#create-offer-id').fill('42');
 }
 
+const dataDir = await mkdtemp(path.join(tmpdir(), 'adrobot-create-flow-'));
 let browser;
+let server;
+let serverClosed;
 try {
+  const databasePath = pathToFileURL(path.join(dataDir, 'archive.db')).pathname;
+  const env = {
+    ...process.env,
+    ADROBOT_BROWSER_PORT: String(port),
+    ADROBOT_DATABASE_URL: 'sqlite:///' + databasePath,
+    PYTHONPATH: path.join(projectRoot, 'src'),
+  };
+  const migration = spawnSync(python, ['-m', 'alembic', 'upgrade', 'head'], {
+    cwd: projectRoot, env, encoding: 'utf8', timeout: 20_000,
+  });
+  if (migration.error) throw migration.error;
+  assert.equal(migration.status, 0, migration.stderr);
+  server = spawn(python, ['tests/browser/fake_server.py'], {
+    cwd: projectRoot, env, stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  serverClosed = new Promise(resolve => server.once('close', resolve));
+  server.on('error', error => { serverErrors += error.message; });
+  server.stderr.on('data', bytes => { serverErrors += bytes.toString().slice(0, 250); });
+
   await waitForServer();
   browser = await chromium.launch({
     headless: true,
@@ -72,6 +89,18 @@ try {
   await page.goto(origin + '/editor');
   assert.equal(await page.locator('#campaign-id').inputValue(), '');
   assert.deepEqual(editorGets.map(url => new URL(url).pathname), ['/api/campaigns/501/editor']);
+  await page.locator('#campaign-id').fill('501');
+  await page.locator('#fetch-button').click();
+  const streams = page.locator('#stream-list');
+  await streams.locator('h2').first().waitFor();
+  const lastSnapshot = await streams.innerText();
+  await page.route('**/api/campaigns/501/editor', route => route.fulfill({
+    status: 409,
+    json: {error: {code: 'editor_duplicate_offer_id', message: 'Duplicate offer binding'}},
+  }));
+  await page.locator('#fetch-button').click();
+  await page.getByText(/Ошибка чтения: Duplicate offer binding/).waitFor();
+  assert.equal(await streams.innerText(), lastSnapshot);
   await page.close();
 
   // Failure injection occurs AFTER route.fetch has made the backend finish
@@ -148,6 +177,13 @@ try {
   await partial.close();
   process.stdout.write('PASS: browser link, dropped response, gateway JSON after Create, partial stage\n');
 } finally {
-  if (browser) await browser.close();
-  server.kill('SIGTERM');
+  try {
+    if (browser) await browser.close();
+  } finally {
+    if (server) {
+      server.kill('SIGTERM');
+      await serverClosed;
+    }
+    await rm(dataDir, { recursive: true, force: true });
+  }
 }

@@ -1,6 +1,6 @@
 # Keitaro Admin API mapping — work in progress
 
-**Status as of 2026-11-20.** On `https://tlgk.host`, live Fetch of campaign
+**Status as of 2026-11-21.** On `https://tlgk.host`, live Fetch of campaign
 `215477` succeeded through the CLI, loopback backend and Chrome headless. A
 separately authorized live Create smoke created campaign `216881` with one
 GEO and one offer. The [Create results](#2026-11-20--live-create-smoke) record
@@ -19,7 +19,7 @@ contracts remain open.
 **OPEN-02.** Create persisted an integer `share=100` for one active binding.
 Unequal-share conversion, rounding and Push remain unverified.
 
-**OPEN-03/04:** binding `id` vs `offer_id` confirmed; duplicate-binding semantics and an empty offer-stream on the live instance remain unverified; archive schema is not created yet.
+**OPEN-03/04:** binding `id` and `offer_id` are distinct; live Remove/Readd changes the binding ID, and a specific duplicate PUT collapsed to one row. These observations justify the guarded B1 logical archive key but not a universal uniqueness guarantee. An empty `landings/offers=[]` was observed; safe editor synchronization remains deferred to B2.
 
 **OPEN-05.** The tested Create defaults are domain `1813`, campaign group `9799`
 and traffic source `836`. All three were validated through GET and confirmed
@@ -28,10 +28,44 @@ on the created campaign.
 **OPEN-06.** Safe update fields and CAS behavior remain unverified.
 
 To repeat the read-only check, configure the backend locally and run
-`python -m adrobot.keitaro.live_fetch 215477`, then Fetch the same campaign in
-`/editor`. The UI displays stream metadata and binding IDs/state/raw share,
-without redirect/filter details. Keep credentials and raw upstream responses out
+`python -m adrobot.keitaro.live_fetch 215477`, then migrate the local SQLite
+archive and Fetch the same campaign in `/editor`. The UI displays stream
+metadata, archived names, Adrobot status, binding IDs/state/raw share and
+retained Pin, without redirect/filter details. Keep credentials and raw upstream responses out
 of reports and logs.
+
+## 2026-11-21 — OPEN-03 live readback (dedicated disabled campaign)
+
+Evidence described by the user and checked locally against `summary.json`,
+`evidence.jsonl` and SQLite authority by the local reviewer. This note records
+those reported observations; no live writes were performed while implementing B1.
+
+- Dedicated **disabled** test campaign `217517`, offer stream `1335575`, global
+  Offer `18813`; mutations used only `PUT /admin_api/v1/streams/{id}`.
+- Initial GET showed `offer_id=18813`, `binding_id=2092367`, raw `share=100`.
+- A PUT with two entries for offer `18813` with raw `50/50` returned 200; the
+  campaign stream list and direct stream GET both showed **one** binding,
+  `binding_id=2092367`, raw `share=50`. This single probe is **not** proof of
+  global uniqueness of `offer_id` within every Keitaro stream.
+- Removing the only offer via `offers=[]` returned 200; both readbacks showed
+  `schema=landings`, `offers=[]`. Full editor synchronization of such a stream
+  is deliberately deferred to OPEN-04/Stage B2, not treated as a mass remove.
+- Readding the same global offer returned one binding with **new**
+  `binding_id=2092392`, raw `share=100`. Logical offer identity is therefore
+  distinct from Keitaro binding identity across complete Remove/Readd.
+- A non-offer-field fingerprint changed after the duplicate PUT; the precise
+  field is unknown. Production Push must not assume that PUT only changes offers.
+  The test campaign was left disabled with one restored offer at raw 100.
+
+B1's supported archive identity is `(campaign_id, stream_id, offer_id)` with
+`DraftId=offer_id` scoped to one stream, while the latest Keitaro binding ID
+is stored in nullable `last_binding_id`. A fully read campaign with multiple
+bindings of the same offer in the **same** stream is rejected by editor Fetch
+as `409 editor_duplicate_offer_id` **before archive DML**; the diagnostic
+`/remote-snapshot` still returns both raw binding rows, and CLI only prints
+aggregate `bindings=N`. This is an explicit application policy, not an API
+claim about universal uniqueness. The `share` read-mapping (OPEN-02) and the
+complete empty stream lifecycle (OPEN-04) are still separate questions.
 
 ## 2026-11-20 — live Create smoke
 

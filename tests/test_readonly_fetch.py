@@ -49,7 +49,7 @@ def fetch(
     handler: Callable[[httpx.Request], httpx.Response],
     path: str = "501",
     *,
-    route: str = "editor",
+    route: str = "remote-snapshot",
 ) -> httpx.Response:
     app = create_app(
         Settings(keitaro_url="https://tracker.example", keitaro_api_key=SECRET, _env_file=None),
@@ -375,8 +375,8 @@ def test_lifespan_reuses_and_closes_transport_and_missing_config_is_diagnostic(c
     )
     with TestClient(app) as client:
         upstream = app.state.keitaro
-        assert client.get("/api/campaigns/501/editor").status_code == 200
-        assert client.get("/api/campaigns/501/editor").status_code == 200
+        assert client.get("/api/campaigns/501/remote-snapshot").status_code == 200
+        assert client.get("/api/campaigns/501/remote-snapshot").status_code == 200
         assert app.state.keitaro is upstream
         assert transport.calls == 2 and not transport.closed
         assert "cache-control" not in client.get("/health").headers
@@ -384,7 +384,7 @@ def test_lifespan_reuses_and_closes_transport_and_missing_config_is_diagnostic(c
     events(capsys)
     app = create_app(Settings(keitaro_url=None, keitaro_api_key=SECRET, _env_file=None))
     with TestClient(app) as client:
-        response = client.get("/api/campaigns/501/editor")
+        response = client.get("/api/campaigns/501/remote-snapshot")
     assert response.status_code == 503
     logs = events(capsys)
     failure = [e for e in logs if e["stage"] == "failed"][0]
@@ -422,8 +422,8 @@ def test_internal_model_name_does_not_replace_required_upstream_schema() -> None
     assert response.json()["streams"][1]["kind"] == "offers"
 
 
-@pytest.mark.parametrize("route", ["editor", "remote-snapshot"])
-def test_diagnostic_and_editor_share_strict_remote_mapping(route: str) -> None:
+@pytest.mark.parametrize("route", ["remote-snapshot"])
+def test_diagnostic_preserves_strict_remote_mapping(route: str) -> None:
     response = fetch(lambda _: httpx.Response(200, json=payload()), route=route)
     assert response.status_code == 200
     assert response.headers["cache-control"] == "no-store"
@@ -437,7 +437,7 @@ def test_diagnostic_and_editor_share_strict_remote_mapping(route: str) -> None:
     assert SECRET not in response.text
 
 
-@pytest.mark.parametrize("route", ["editor", "remote-snapshot"])
+@pytest.mark.parametrize("route", ["remote-snapshot"])
 @pytest.mark.parametrize(
     "upstream",
     [

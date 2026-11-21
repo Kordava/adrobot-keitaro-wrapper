@@ -1,4 +1,4 @@
-"""SQLAlchemy metadata for future archive model (await OPEN-03 binding identity)."""
+"""SQLAlchemy metadata for the known-offer archive and Alembic."""
 
 from sqlalchemy.orm import DeclarativeBase
 

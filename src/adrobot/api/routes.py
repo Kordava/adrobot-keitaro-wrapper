@@ -22,7 +22,9 @@ from adrobot.campaigns.create import (
 )
 from adrobot.config import Settings
 from adrobot.editor.domain import PreviewProblem, calculate_preview
-from adrobot.editor.schemas import PreviewInput, PreviewResponse
+from adrobot.editor.fetch_coordinator import FetchCoordinator, fetch_for_request
+from adrobot.editor.schemas import EditorSnapshot, PreviewInput, PreviewResponse
+from adrobot.editor.service import EditorProblem
 from adrobot.keitaro.client import KeitaroClient
 from adrobot.keitaro.exceptions import KeitaroError, KeitaroNotConfigured
 from adrobot.keitaro.read_models import JS_SAFE_INTEGER, ReadonlySnapshot, build_readonly_snapshot
@@ -58,14 +60,24 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@router.get("/api/campaigns/{campaign_id}/editor", response_model=ReadonlySnapshot)
+@router.get("/api/campaigns/{campaign_id}/editor", response_model=EditorSnapshot)
 async def campaign_streams(
     request: Request,
     campaign_id: Annotated[int, ApiPath(gt=0, le=JS_SAFE_INTEGER)],
     response: Response,
-) -> ReadonlySnapshot:
-    """Provisional editor read; B1 will replace this with an archived snapshot."""
-    return await _read_remote_snapshot(request, campaign_id, response)
+) -> EditorSnapshot | JSONResponse:
+    """Complete remote GET plus atomic local archive sync; never a Keitaro write."""
+    response.headers["Cache-Control"] = "no-store"
+    try:
+        upstream: KeitaroClient | None = getattr(request.app.state, "keitaro", None)
+        if upstream is None:
+            raise KeitaroNotConfigured("Keitaro credentials not configured")
+        coordinator: FetchCoordinator = request.app.state.editor_coordinator
+        return await fetch_for_request(request, campaign_id, upstream, coordinator)
+    except EditorProblem as exc:
+        return _safe_create_error(
+            request, code=exc.code, message=str(exc), status_code=exc.status_code
+        )
 
 
 @router.get("/api/campaigns/{campaign_id}/remote-snapshot", response_model=ReadonlySnapshot)

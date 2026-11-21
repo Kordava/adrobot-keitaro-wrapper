@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from b1_support import stream
 from fastapi import FastAPI
 
 from adrobot.config import Settings
@@ -65,6 +66,34 @@ def test_readonly_smoke_exercises_route_and_counts() -> None:
     assert requests[0].url.path == "/admin_api/v1/campaigns/20/streams"
     assert requests[0].headers["Api-Key"] == "synthetic-key"
     assert "PRIVATE-DATA" not in str(result)
+
+
+@pytest.mark.parametrize("stream_count", [1, 2])
+def test_readonly_smoke_counts_duplicate_offers_as_distinct_bindings(stream_count: int) -> None:
+    streams = [
+        stream(
+            sid=51 + i,
+            pairs=[(99, 80 + 2 * i, 25, "active"), (99, 81 + 2 * i, 25, "disabled")],
+            campaign_id=20,
+            position=i + 1,
+        )
+        for i in range(stream_count)
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        assert request.url.path == "/admin_api/v1/campaigns/20/streams"
+        return httpx.Response(200, json=streams)
+
+    assert asyncio.run(
+        fetch_through_app(20, settings(), keitaro_transport=httpx.MockTransport(handler))
+    ) == {
+        "status": "ok",
+        "campaign_id": 20,
+        "streams": stream_count,
+        "offer_streams": stream_count,
+        "bindings": 2 * stream_count,
+    }
 
 
 @pytest.mark.parametrize(

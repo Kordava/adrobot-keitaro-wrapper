@@ -1,16 +1,15 @@
 """Strict internal DTOs for stateless editor Preview.
 
-The IDs are *logical draft item* IDs, not an assertion that Keitaro's
-binding ID and global offer ID are interchangeable (OPEN-03). A future
-Fetch adapter must establish that identity mapping before connecting this
-contract to remote data. These DTOs are arithmetic-only, never Push evidence.
+The IDs are logical draft item IDs, not Keitaro binding IDs. The B1 editor
+Fetch maps each ID to global offer_id *within its stream*, rejecting concurrent
+duplicate offers, and never treats these DTOs as evidence authorizing Push.
 """
 
 from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from adrobot.keitaro.read_models import JS_SAFE_INTEGER
+from adrobot.keitaro.read_models import JS_SAFE_INTEGER, ReadonlyOffer
 
 MAX_DRAFT_ITEMS = 2048
 
@@ -140,3 +139,53 @@ class PreviewResponse(PreviewResult):
 
     campaign_id: DraftId
     stream_id: DraftId
+
+
+class KnownOfferRow(BaseModel):
+    """One persisted row in display order; never a draft/remote binding patch."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: DraftId
+    offer_id: DraftId
+    binding_id: DraftId | None
+    last_binding_id: DraftId | None
+    name: str = Field(min_length=1)
+    status: Literal["Active", "Removed"]
+    kt_state: Literal["active", "disabled"] | None
+    last_seen_kt_state: Literal["active", "disabled"]
+    display_share: RawShare
+    display_share_unit: ShareUnit
+    last_seen_raw_share: RawShare
+    pinned_share: PinShare | None
+    first_seen_at: str
+    last_seen_at: str
+    removed_at: str | None
+
+
+class EditorStream(BaseModel):
+    """Sanitized stream with its own independent nine-field Preview base."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    id: DraftId
+    name: str
+    position: int
+    state: str
+    schema_name: str = Field(alias="schema")
+    kind: Literal["offers", "non_offer"]
+    offers: list[ReadonlyOffer]
+    editor: PreviewInput | None
+    known_offers: list[KnownOfferRow]
+
+
+class EditorSnapshot(BaseModel):
+    """Successful archive-synchronized Fetch; never authority for a Keitaro Push."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    campaign_id: DraftId
+    mapping_status: Literal["archive_synced"] = "archive_synced"
+    local_archive_synced: Literal[True] = True
+    keitaro_write_enabled: Literal[False] = False
+    streams: list[EditorStream]

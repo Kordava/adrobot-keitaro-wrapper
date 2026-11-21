@@ -8,7 +8,7 @@ from adrobot.config import Settings
 from adrobot.main import create_app
 
 
-@pytest.mark.parametrize("route", ["editor", "remote-snapshot"])
+@pytest.mark.parametrize("route", ["remote-snapshot"])
 def test_live_stream_schema_survives_read_mapping_without_share_math(route: str) -> None:
     payload = [
         {
